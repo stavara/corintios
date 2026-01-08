@@ -3,7 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <title>Corintios 13:13</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
+  * {
+  box-sizing: border-box;
+}
+
 body {
   margin: 0;
   font-family: system-ui, sans-serif;
@@ -32,16 +37,24 @@ body {
 
 h1 {
   margin-top: 0;
-  font-size: 1.4rem;
+  font-size: 1.6rem;
 }
 
 .pregunta {
-  font-size: 1.2rem;
+  font-size: 1.6rem;
   margin-bottom: 20px;
+}
+
+button {
+    font-size: 1.6rem;
 }
 
 button:hover {
   cursor: pointer;
+}
+
+label, select {
+    font-size: 1.6rem;
 }
 
 .opciones button {
@@ -89,6 +102,41 @@ button:hover {
   margin-top: 15px;
   color: #cbd5f5;
 }
+
+@media (max-width: 900px) {
+  .app {
+    grid-template-columns: 1fr;
+    width: 95%;
+  }
+}
+
+@media (max-width: 600px) {
+  h1 {
+    font-size: 1.2rem;
+  }
+
+  .pregunta {
+    font-size: 1.05rem;
+  }
+
+  .opciones button,
+  .acciones button,
+  select {
+    padding: 14px;
+    font-size: 0.95rem;
+  }
+}
+
+@media (max-width: 900px) {
+  .panel:last-child {
+    order: 2;
+  }
+
+  .panel:first-child {
+    order: 1;
+  }
+}
+
 </style>
 </head>
 <body>
