@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Corintios 13:13</title>
+<style>
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: radial-gradient(circle at top, #1e293b, #020617);
+  color: #e5e7eb;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.app {
+  width: 70%;
+  max-width: 95%;
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 20px;
+}
+
+.panel {
+  background: rgba(255,255,255,0.05);
+  border-radius: 16px;
+  padding: 20px;
+  backdrop-filter: blur(8px);
+}
+
+h1 {
+  margin-top: 0;
+  font-size: 1.4rem;
+}
+
+.pregunta {
+  font-size: 1.2rem;
+  margin-bottom: 20px;
+}
+
+button:hover {
+  cursor: pointer;
+}
+
+.opciones button {
+  display: block;
+  width: 100%;
+  margin-bottom: 10px;
+  padding: 12px;
+  border-radius: 10px;
+  border: none;
+  background: rgba(255,255,255,0.08);
+  color: #e5e7eb;
+  cursor: pointer;
+  text-align: left;
+}
+
+.opciones button:hover {
+  background: rgba(255,255,255,0.15);
+  cursor: pointer;
+}
+
+.opciones button.correcta { background: #16a34a; }
+.opciones button.incorrecta { background: #dc2626; }
+
+.acciones {
+  margin-top: 20px;
+  display: flex;
+  gap: 10px;
+}
+
+.acciones button, select {
+  flex: 1;
+  padding: 12px;
+  border-radius: 10px;
+  border: none;
+  background: #334155;
+  color: #e5e7eb;
+  cursor: pointer;
+}
+
+.acciones button:disabled {
+  opacity: 0.5;
+}
+
+.explicacion {
+  margin-top: 15px;
+  color: #cbd5f5;
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="panel">
+    <h1>Corintios 13:13</h1>
+
+    <div class="pregunta" id="pregunta">Selecciona un tema y pulsa Empezar.</div>
+    <div class="opciones" id="opciones"></div>
+    <div class="explicacion" id="explicacion"></div>
+
+    <div class="acciones">
+      <button id="empezar">Empezar</button>
+      <button id="siguiente" disabled>Siguiente</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h1>Configuración</h1>
+
+    <label>Tema</label>
+    <select id="temaSelect"></select>
+
+    <hr>
+
+    <div>Aciertos: <span id="aciertos">0</span></div>
+    <div>Fallos: <span id="fallos">0</span></div>
+    <div>Progreso: <span id="contador">0 / 0</span></div>
+    <div>Precisión: <span id="precision">—</span></div>
+  </div>
+</div>
+
+<script>
+
+let preguntasPendientes = [];
+let ronda = 1;
+
+
+const bancoPreguntas = [
+    { tema:"Tema 1", texto:"Un firewall:", opciones:{A:"Traduce páginas", B:"Actúa como switch", C:"Mide latencia", D:"Filtra tráfico"}, correcta:"D", explicacion:"" },
+  { tema:"Tema 1", texto:"Un hub opera en:", opciones:{A:"Red", B:"Aplicación", C:"Físico", D:"Transporte"}, correcta:"C", explicacion:"" },
+  { tema:"Tema 1", texto:"En topología anillo:", opciones:{A:"Es exclusivamente WiFi", B:"Todos conectan a un servidor", C:"Cada nodo conecta con dos formando lazo", D:"No hay fallos"}, correcta:"C", explicacion:"" },
+  { tema:"Tema 1", texto:"Un datagrama:", opciones:{A:"Nunca se pierde", B:"Requiere establecimiento", C:"Servicio no orientado a conexión", D:"Entrega siempre ordenada"}, correcta:"C", explicacion:"" },
+  { tema:"Tema 1", texto:"Nivel de enlace ofrece:", opciones:{A:"Cifrado final", B:"Servicios web", C:"Transmisión fiable nodo a nodo", D:"Encaminamiento"}, correcta:"C", explicacion:"" },
+  { tema:"Tema 1", texto:"Una red mallada completa:", opciones:{A:"Cada nodo conecta con todos", B:"Solo satélite", C:"Siempre un único camino", D:"No hay redundancia"}, correcta:"A", explicacion:"" },
+  { tema:"Tema 1", texto:"Una LAN es:", opciones:{A:"Red de satélite", B:"Red local privada", C:"Red exclusivamente móvil", D:"Red mundial"}, correcta:"B", explicacion:"" },
+  { tema:"Tema 1", texto:"Un circuito virtual:", opciones:{A:"Servicio orientado a conexión", B:"No orden", C:"Sin control errores", D:"Sin señalización"}, correcta:"A", explicacion:"" },
+  { tema:"Tema 1", texto:"QoS busca:", opciones:{A:"Saturar red", B:"Optimizar rendimiento", C:"Consumir ancho", D:"Eliminar niveles"}, correcta:"B", explicacion:"" },
+  { tema:"Tema 1", texto:"Throughput es:", opciones:{A:"Datos efectivos entregados", B:"Latencia", C:"MAC", D:"Velocidad contratada fija"}, correcta:"A", explicacion:"" },
+  { tema:"Tema 1", texto:"¿Qué es una PDU?", opciones:{A:"Un nombre DNS", B:"Un dominio lógico", C:"Unidad de datos asociada a una capa", D:"Una dirección MAC"}, correcta:"C", explicacion:"" },
+  { tema:"Tema 1", texto:"Nivel de transporte:", opciones:{A:"Accede al medio", B:"Controla sesiones", C:"Traduce sintaxis", D:"Fiabilidad extremo a extremo"}, correcta:"D", explicacion:"" },
+  { tema:"Tema 1", texto:"En TCP/IP, IP es:", opciones:{A:"Encaminamiento", B:"Aplicación", C:"Cifrado", D:"Fiabilidad"}, correcta:"A", explicacion:"" },
+  { tema:"Tema 1", texto:"Nivel físico trata de:", opciones:{A:"Transmisión de bits", B:"Presentación", C:"Sesiones", D:"Rutas"}, correcta:"A", explicacion:"" },
+  { tema:"Tema 1", texto:"¿Qué misión tiene un DCE?", opciones:{A:"Asignar direcciones IP", B:"Adaptar la señal al canal de transmisión", C:"Encriptar datos", D:"Controlar sesiones de aplicación"}, correcta:"B", explicacion:"" },
+  { tema:"Tema 1", texto:"Desencapsular consiste en:", opciones:{A:"Agregar headers", B:"Cifrar datos", C:"Retirar cabeceras", D:"Cambiar direcciones"}, correcta:"C", explicacion:"" },
+  { tema:"Tema 1", texto:"¿Qué es una arquitectura de red?", opciones:{A:"Aplicaciones instaladas", B:"Conjunto de niveles y protocolos", C:"Lista de direcciones IP", D:"Esquema de cableado"}, correcta:"B", explicacion:"" },
+  { tema:"Tema 1", texto:"En topología estrella:", opciones:{A:"Sin nodo crítico", B:"Siempre mallado", C:"Todos conectan a un nodo central", D:"Todos conectan en cadena"}, correcta:"C", explicacion:"" },
+  { tema:"Tema 1", texto:"Una pasarela opera en:", opciones:{A:"Niveles superiores", B:"Físico", C:"MAC", D:"L1"}, correcta:"A", explicacion:"" },
+  { tema:"Tema 1", texto:"¿Qué es un DTE?", opciones:{A:"Equipo terminal de datos", B:"Equipo de transmisión eléctrica", C:"Servidor DNS", D:"Dispositivo de almacenamiento"}, correcta:"A", explicacion:"" },
+  { tema:"Tema 1", texto:"Web es:", opciones:{A:"Internet entero", B:"Protocolo físico", C:"Modelo OSI", D:"Una aplicación sobre Internet"}, correcta:"D", explicacion:"" },
+  { tema:"Tema 1", texto:"Nivel de acceso a red en TCP/IP:", opciones:{A:"Agrupa físico y enlace", B:"Es DNS", C:"Es aplicación", D:"Es transporte"}, correcta:"A", explicacion:"" },
+  { tema:"Tema 1", texto:"Una MAN es:", opciones:{A:"Red doméstica", B:"Red metropolitana", C:"Red submarina", D:"Red personal"}, correcta:"B", explicacion:"" },
+  { tema:"Tema 1", texto:"Función del repetidor:", opciones:{A:"Cifrar", B:"Encaminar", C:"Regenerar señal", D:"Asignar IP"}, correcta:"C", explicacion:"" },
+  { tema:"Tema 1", texto:"En TCP/IP, UDP es:", opciones:{A:"Con encriptado obligatorio", B:"No orientado a conexión", C:"Basado en circuitos", D:"Orientado"}, correcta:"B", explicacion:"" },
+  { tema:"Tema 1", texto:"¿Cuál es un elemento básico de una red?", opciones:{A:"Procesadores gráficos", B:"Ficheros del sistema", C:"Enlaces físicos", D:"Altavoces"}, correcta:"C", explicacion:"" },
+  { tema:"Tema 1", texto:"Etapas en conmutación de circuitos:", opciones:{A:"Transmisión única", B:"Sin señalización", C:"Establecer-transmitir-liberar", D:"Entrega aleatoria"}, correcta:"C", explicacion:"" },
+  { tema:"Tema 1", texto:"La interfaz entre capas define:", opciones:{A:"Los cables permitidos", B:"Operaciones del nivel inferior para el superior", C:"La velocidad del medio", D:"Los dominios de colisión"}, correcta:"B", explicacion:"" },
+  { tema:"Tema 1", texto:"Retardo de procesamiento:", opciones:{A:"Tiempo en bits", B:"Tiempo para tratar cabeceras", C:"Tiempo en cola", D:"Tiempo en fibra"}, correcta:"B", explicacion:"" },
+  { tema:"Tema 1", texto:"Conmutación de circuitos:", opciones:{A:"Paquetes independientes", B:"No secuencial", C:"Canal dedicado", D:"Sin establecimiento"}, correcta:"C", explicacion:"" },
+  { tema:"Tema 1", texto:"Conmutación de paquetes:", opciones:{A:"Canal fijo", B:"Datos divididos en paquetes independientes", C:"Ruta única", D:"Sin direcciones"}, correcta:"B", explicacion:"" },
+  { tema:"Tema 1", texto:"Una red inalámbrica destaca por:", opciones:{A:"Velocidad superior al cable siempre", B:"Seguridad automática", C:"Inmunidad total a interferencias", D:"Movilidad"}, correcta:"D", explicacion:"" },
+  { tema:"Tema 1", texto:"Un ejemplo de dispositivo intermedio es:", opciones:{A:"PC", B:"Router", C:"Aplicación web", D:"Impresora"}, correcta:"B", explicacion:"" },
+  { tema:"Tema 1", texto:"Un proxy:", opciones:{A:"Intermediario cliente-Internet", B:"Encapsula tramas", C:"Asigna IP", D:"Conecta cables"}, correcta:"A", explicacion:"" },
+  { tema:"Tema 1", texto:"Modelo TCP/IP tiene:", opciones:{A:"4 niveles", B:"5 niveles", C:"7 niveles", D:"3 niveles"}, correcta:"A", explicacion:"" },
+  { tema:"Tema 1", texto:"Tránsito consiste en:", opciones:{A:"Pagar a otra red por alcance global", B:"DNS dinámico", C:"Intercambio gratuito", D:"Conexión sin rutas"}, correcta:"A", explicacion:"" },
+  { tema:"Tema 1", texto:"Peering consiste en:", opciones:{A:"Intercambio directo sin pago", B:"Crear VLAN", C:"Comprar tránsito", D:"Ceder direcciones"}, correcta:"A", explicacion:"" },
+  { tema:"Tema 1", texto:"Jitter es:", opciones:{A:"Velocidad", B:"Variación del retardo", C:"Pérdida", D:"Ruido físico"}, correcta:"B", explicacion:"" },
+  { tema:"Tema 1", texto:"Pérdida ocurre por:", opciones:{A:"Fallo capa aplicación", B:"Congestión o errores", C:"Errores del usuario", D:"DNS"}, correcta:"B", explicacion:"" },
+  { tema:"Tema 1", texto:"Una WAN es:", opciones:{A:"Red de un edificio", B:"Red Bluetooth", C:"Red doméstica", D:"Red de amplia extensión"}, correcta:"D", explicacion:"" },
+  { tema:"Tema 1", texto:"La PDU en nivel de aplicación es:", opciones:{A:"Mensaje", B:"Trama", C:"Paquete", D:"Bitstream"}, correcta:"A", explicacion:"" },
+  { tema:"Tema 1", texto:"Nivel de presentación:", opciones:{A:"Control de flujo", B:"Acceso físico", C:"Rutas IP", D:"Formato, codificación y cifrado"}, correcta:"D", explicacion:"" },
+  { tema:"Tema 1", texto:"La PDU en red es:", opciones:{A:"Paquete", B:"Segmento", C:"Trama", D:"Archivo"}, correcta:"A", explicacion:"" },
+  { tema:"Tema 1", texto:"Un ejemplo de equipo final es:", opciones:{A:"Un router", B:"Un switch", C:"Un repetidor", D:"Un PC"}, correcta:"D", explicacion:"" },
+  { tema:"Tema 1", texto:"¿Qué tipo de comunicación permite envío simultáneo en ambas direcciones?", opciones:{A:"Half-duplex", B:"Full-duplex", C:"Broadcast", D:"Simplex"}, correcta:"B", explicacion:"" },
+  { tema:"Tema 1", texto:"Una red cableada destaca por:", opciones:{A:"Movilidad total", B:"Mayor fiabilidad", C:"Menor seguridad", D:"Cero interferencias siempre"}, correcta:"B", explicacion:"" },
+  { tema:"Tema 1", texto:"¿Qué define un sistema de telecomunicación?", opciones:{A:"Solo software de red", B:"Conjunto de equipos de transmisión, conmutación y medios", C:"Únicamente el emisor", D:"Solo routers"}, correcta:"B", explicacion:"" },
+  { tema:"Tema 1", texto:"Un ISP proporciona:", opciones:{A:"Cables submarinos únicamente", B:"Switching físico", C:"Acceso a Internet", D:"DNS raíz"}, correcta:"C", explicacion:"" },
+  { tema:"Tema 1", texto:"La PDU en enlace es:", opciones:{A:"Segmento", B:"Trama", C:"Mensaje", D:"Paquete"}, correcta:"B", explicacion:"" },
+  { tema:"Tema 1", texto:"Modelo OSI tiene:", opciones:{A:"7 niveles", B:"3 niveles", C:"5 niveles", D:"4 niveles"}, correcta:"A", explicacion:"" },
+  { tema:"Tema 1", texto:"Retardo de propagación:", opciones:{A:"Función de distancia y velocidad", B:"Colas", C:"CPU", D:"MAC"}, correcta:"A", explicacion:"" },
+  { tema:"Tema 1", texto:"En topología bus:", opciones:{A:"Todos conectan entre sí", B:"Todos conectan a nodo central", C:"Siempre inalámbrico", D:"Un único medio lineal compartido"}, correcta:"D", explicacion:"" },
+  { tema:"Tema 1", texto:"Encapsular consiste en:", opciones:{A:"Cifrar siempre", B:"Fragmentar el medio", C:"Eliminar estructura", D:"Añadir cabeceras y colas"}, correcta:"D", explicacion:"" },
+  { tema:"Tema 1", texto:"¿Qué es una red de computadores?", opciones:{A:"Conjunto de equipos terminales autónomos interconectados que intercambian información", B:"Un único ordenador con varios usuarios", C:"Un sistema de impresión compartida", D:"Un conjunto de aplicaciones instaladas"}, correcta:"A", explicacion:"" },
+  { tema:"Tema 1", texto:"Internet es:", opciones:{A:"Una aplicación", B:"Red de redes autónomas", C:"Solo la Web", D:"Una única red centralizada"}, correcta:"B", explicacion:"" },
+  { tema:"Tema 1", texto:"Un Tier 3:", opciones:{A:"Vende a usuarios finales", B:"Núcleo de Internet", C:"Vende tránsito global", D:"Siempre satelital"}, correcta:"A", explicacion:"" },
+  { tema:"Tema 1", texto:"Un switch opera en:", opciones:{A:"Red", B:"Enlace", C:"Aplicación", D:"Transporte"}, correcta:"B", explicacion:"" },
+  { tema:"Tema 1", texto:"Nivel de sesión:", opciones:{A:"Conversión de codificación", B:"Control de diálogo y sincronización", C:"Encaminamiento", D:"Multiplexación de puertos"}, correcta:"B", explicacion:"" },
+  { tema:"Tema 1", texto:"Retardo de transmisión:", opciones:{A:"Contención", B:"Tiempo de CPU", C:"Tiempo en enviar bits al medio", D:"DNS"}, correcta:"C", explicacion:"" },
+  { tema:"Tema 1", texto:"Unicast es:", opciones:{A:"Todos", B:"Grupo", C:"Un solo destino", D:"Anycast"}, correcta:"C", explicacion:"" },
+  { tema:"Tema 1", texto:"Una red de difusión envía a:", opciones:{A:"Solo uno", B:"Solo anycast", C:"Siempre multicast", D:"Todos los nodos del medio"}, correcta:"D", explicacion:"" },
+  { tema:"Tema 1", texto:"Un Tier 1:", opciones:{A:"Solo minorista", B:"No compra tránsito", C:"Depende de Tier 3", D:"Pequeña red"}, correcta:"B", explicacion:"" },
+  { tema:"Tema 1", texto:"Nivel de red hace:", opciones:{A:"Encaminamiento", B:"Control de diálogo", C:"Interfaz usuario", D:"Cifrado de sintaxis"}, correcta:"A", explicacion:"" },
+  { tema:"Tema 1", texto:"Retardo de cola:", opciones:{A:"Tiempo eléctrico", B:"Espera en buffer", C:"Inicio de sesión", D:"Rutas múltiples"}, correcta:"B", explicacion:"" },
+  { tema:"Tema 1", texto:"VPN:", opciones:{A:"Hub virtual", B:"Router dedicado", C:"Cable lógico simple", D:"Canal cifrado a través de Internet"}, correcta:"D", explicacion:"" },
+  { tema:"Tema 1", texto:"¿Qué aportan los protocolos?", opciones:{A:"Capacidad gráfica", B:"Sistema de archivos", C:"Nombres de dominio", D:"Reglas para el intercambio ordenado de datos"}, correcta:"D", explicacion:"" },
+  { tema:"Tema 1", texto:"¿Qué define la sintaxis de un protocolo?", opciones:{A:"Estructura del mensaje", B:"Significado de campos", C:"Temporización", D:"Topología"}, correcta:"A", explicacion:"" },
+  { tema:"Tema 1", texto:"¿Para qué sirve estratificar en niveles?", opciones:{A:"Duplicar rutas", B:"Reducir complejidad", C:"Aumentar consumo", D:"Eliminar hardware"}, correcta:"B", explicacion:"" },
+  { tema:"Tema 1", texto:"Nivel de aplicación:", opciones:{A:"Encaminamiento", B:"Tramas", C:"Capa física", D:"Servicios al usuario"}, correcta:"D", explicacion:"" },
+  { tema:"Tema 1", texto:"Una PAN es:", opciones:{A:"Red metropolitana", B:"Red telefónica", C:"Red personal de corto alcance", D:"Red internacional"}, correcta:"C", explicacion:"" },
+  { tema:"Tema 1", texto:"Un servicio en un nivel ofrece:", opciones:{A:"Cabeceras a nivel físico", B:"Capacidades a la capa superior", C:"Señales analógicas", D:"Tramas a nivel usuario"}, correcta:"B", explicacion:"" },
+  { tema:"Tema 1", texto:"La PDU en transporte TCP es:", opciones:{A:"Trama", B:"Bit", C:"Segmento", D:"Datagrama IP"}, correcta:"C", explicacion:"" },
+  { tema:"Tema 1", texto:"Broadcast es:", opciones:{A:"Mensaje a uno", B:"Mensaje a todas las estaciones", C:"Mensaje a un grupo", D:"Mensaje a un destino posible"}, correcta:"B", explicacion:"" },
+  { tema:"Tema 1", texto:"Un router opera en:", opciones:{A:"Transporte", B:"Presentación", C:"Enlace", D:"Red"}, correcta:"D", explicacion:"" },
+  { tema:"Tema 1", texto:"Desventaja de la estrella:", opciones:{A:"Sin switches", B:"Siempre inalámbrica", C:"Sin escalabilidad", D:"Fallo del nodo central"}, correcta:"D", explicacion:"" },
+
+  { tema:"Tema 2", texto:"Un registro NS indica:", opciones:{A:"Servidores autoritativos",B:"Una cookie",C:"Un alias",D:"La dirección del router"}, correcta:"A", explicacion:"" },
+  { tema:"Tema 2", texto:"Un tracker BitTorrent:", opciones:{A:"Es un router",B:"Resuelve nombres",C:"Indica qué peers tienen qué piezas",D:"Almacena el archivo completo"}, correcta:"C", explicacion:"" },
+  { tema:"Tema 2", texto:"Una arquitectura orientada a eventos usa:", opciones:{A:"SMTP para video",B:"ICMP",C:"Notificaciones asíncronas tipo webhooks",D:"ARP broadcast"}, correcta:"C", explicacion:"" },
+  { tema:"Tema 2", texto:"Una app distribuida requiere:", opciones:{A:"Solo capa física",B:"Un único host",C:"ARP",D:"Comunicación entre procesos mediante protocolos de aplicación"}, correcta:"D", explicacion:"" },
+  { tema:"Tema 2", texto:"Una cookie de sesión se almacena:", opciones:{A:"En el navegador del cliente",B:"En la capa física",C:"En el router ISP",D:"En la BIOS del equipo"}, correcta:"A", explicacion:"" },
+  { tema:"Tema 2", texto:"Un registro AAAA:", opciones:{A:"Asocia un nombre con IPv6",B:"Con IPv4",C:"Con un NS",D:"Con un TXT"}, correcta:"A", explicacion:"" },
+  { tema:"Tema 2", texto:"Una API RESTful usa típicamente:", opciones:{A:"DHCP para autenticación",B:"Ethernet como protocolo de aplicación",C:"Métodos estándar HTTP para operaciones sobre recursos",D:"ARP para consulta de rutas"}, correcta:"C", explicacion:"" },
+  { tema:"Tema 2", texto:"Un registro A:", opciones:{A:"Con un alias",B:"Con un MX",C:"Asocia un nombre con IPv4",D:"Con IPv6"}, correcta:"C", explicacion:"" },
+
+  { tema:"Tema 2", texto:"La cabecera Accept indica:", opciones:{A:"Los tipos de contenido que el cliente puede recibir",B:"El número de hops",C:"El tamaño del archivo en disco",D:"El dominio origen"}, correcta:"A", explicacion:"" },
+  { tema:"Tema 2", texto:"Una ventaja de DNS distribuido es:", opciones:{A:"Inmutabilidad total",B:"Escalabilidad",C:"Ausencia de TTL",D:"Dependencia total de un servidor único"}, correcta:"B", explicacion:"" },
+  { tema:"Tema 2", texto:"Content-Type describe:", opciones:{A:"La duración de la conexión",B:"El dominio del servidor",C:"El tipo de contenido enviado",D:"El tamaño del fichero"}, correcta:"C", explicacion:"" },
+  { tema:"Tema 2", texto:"Una ventaja de IMAP en movilidad es:", opciones:{A:"Transmitir sin autenticación",B:"Usar puertos dinámicos UDP",C:"Mantener buzón en servidor",D:"Eliminar correo remoto siempre"}, correcta:"C", explicacion:"" },
+  { tema:"Tema 2", texto:"Una consulta recursiva implica que el servidor:", opciones:{A:"Es autoritativo siempre",B:"Devuelve siempre referencias",C:"No accede a servidores raíz",D:"Resuelve completamente en nombre del cliente"}, correcta:"D", explicacion:"" },
+  { tema:"Tema 2", texto:"El código HTTP 404 indica:", opciones:{A:"Recurso no encontrado",B:"Recurso creado",C:"Permisos insuficientes",D:"Cifrado inválido"}, correcta:"A", explicacion:"" },
+  { tema:"Tema 2", texto:"El método HEAD devuelve:", opciones:{A:"Una ruta de enrutamiento",B:"El cuerpo completo",C:"Solo las cabeceras de la respuesta",D:"Un registro DNS"}, correcta:"C", explicacion:"" },
+
+  { tema:"Tema 2", texto:"POP3 se basa en:", opciones:{A:"Enviar correo a servidores",B:"Programar TTL",C:"Descargar mensajes al cliente",D:"Sincronizar carpetas remotas"}, correcta:"C", explicacion:"" },
+  { tema:"Tema 2", texto:"Un proceso en red es:", opciones:{A:"Un router interior de la red",B:"Un segmento TCP",C:"Un programa en ejecución que intercambia mensajes",D:"Una interfaz física"}, correcta:"C", explicacion:"" },
+  { tema:"Tema 2", texto:"Una sesión SMTP finaliza con:", opciones:{A:"END",B:"FIN",C:"QUIT",D:"CLOSE"}, correcta:"C", explicacion:"" },
+  { tema:"Tema 2", texto:"El código HTTP 403 indica:", opciones:{A:"Recurso inexistente",B:"Redirección permanente",C:"Acceso prohibido",D:"Error interno"}, correcta:"C", explicacion:"" },
+  { tema:"Tema 2", texto:"IMAP usa el puerto:", opciones:{A:"53",B:"143",C:"443",D:"25"}, correcta:"B", explicacion:"" },
+
+  { tema:"Tema 2", texto:"La cabecera User-Agent identifica:", opciones:{A:"El cliente que realiza la petición",B:"El servidor DNS",C:"El puerto de transporte",D:"El router de borde"}, correcta:"A", explicacion:"" },
+  { tema:"Tema 2", texto:"Un diseño de aplicación eficiente requiere:", opciones:{A:"Cambiar cables físicos",B:"Elección correcta entre TCP/UDP",C:"Eliminar capas",D:"Usar solo IPv6"}, correcta:"B", explicacion:"" },
+  { tema:"Tema 2", texto:"HTTP pertenece a la capa:", opciones:{A:"Aplicación",B:"Red",C:"Física",D:"Enlace"}, correcta:"A", explicacion:"" },
+  { tema:"Tema 2", texto:"La capa de aplicación se encarga de:", opciones:{A:"Asignar direcciones MAC",B:"Encaminar paquetes IP",C:"Definir los protocolos usados por procesos distribuidos",D:"Controlar el acceso al medio"}, correcta:"C", explicacion:"" },
+  { tema:"Tema 2", texto:"HTTP es un protocolo sin estado porque:", opciones:{A:"Usa solo UDP",B:"No usa puertos",C:"No recuerda peticiones previas",D:"No usa cabeceras"}, correcta:"C", explicacion:"" },
+
+  { tema:"Tema 2", texto:"Las cookies permiten:", opciones:{A:"Modificar direcciones IP",B:"Mantener estado entre peticiones",C:"Sustituir certificados TLS",D:"Crear puertos adicionales"}, correcta:"B", explicacion:"" },
+  { tema:"Tema 2", texto:"Un proxy HTTP puede:", opciones:{A:"Intermediar y reenviar peticiones y respuestas",B:"Actuar como switch físico",C:"Asignar direcciones IPv6",D:"Modificar puertos TCP sin permiso"}, correcta:"A", explicacion:"" },
+  { tema:"Tema 2", texto:"SMTP autenticado suele usar:", opciones:{A:"110",B:"80",C:"587",D:"21"}, correcta:"C", explicacion:"" },
+  { tema:"Tema 2", texto:"Una petición HTTP OPTIONS sirve para:", opciones:{A:"Crear recursos",B:"Consultar los métodos soportados",C:"Asignar nombres de dominio",D:"Enviar archivos binarios"}, correcta:"B", explicacion:"" },
+  { tema:"Tema 2", texto:"Una videollamada prioriza:", opciones:{A:"Entrega fiable total",B:"TTL alto",C:"Frames exactos",D:"Constancia del retardo frente a pérdida cero"}, correcta:"D", explicacion:"" },
+
+  { tema:"Tema 2", texto:"Un cliente se caracteriza por:", opciones:{A:"Iniciar la comunicación",B:"No enviar solicitudes",C:"Esperar conexiones siempre",D:"Usar solo UDP"}, correcta:"A", explicacion:"" },
+  { tema:"Tema 2", texto:"El código HTTP 200 indica:", opciones:{A:"Redirección",B:"Error de cliente",C:"Error de servidor",D:"Éxito"}, correcta:"D", explicacion:"" },
+  { tema:"Tema 2", texto:"Una ventaja de P2P es:", opciones:{A:"No usar sockets",B:"Escalabilidad al repartir carga",C:"Menor complejidad siempre",D:"Un punto único de fallo"}, correcta:"B", explicacion:"" },
+  { tema:"Tema 2", texto:"Una limitación de POP3 es:", opciones:{A:"Solo usa TCP",B:"No sincroniza varios dispositivos",C:"No permite adjuntos",D:"Requiere DNSSEC"}, correcta:"B", explicacion:"" },
+
+  { tema:"Tema 2", texto:"Un webhook se basa en:", opciones:{A:"Consultas DNS inversas",B:"El envío automático de peticiones HTTP al producirse un evento",C:"Descarga FTP pasiva",D:"Transferencia POP3 periódica"}, correcta:"B", explicacion:"" },
+
+  { tema:"Tema 2", texto:"Una API segura debe:", opciones:{A:"Usar cabeceras inválidas",B:"Desactivar verificación",C:"Usar HTTPS",D:"Enviar credenciales en texto plano"}, correcta:"C", explicacion:"" },
+
+  { tema:"Tema 2", texto:"Un registro CNAME indica:", opciones:{A:"Un alias canónico",B:"Un servidor raíz",C:"Una clave pública",D:"Un servidor de correo"}, correcta:"A", explicacion:"" },
+
+  { tema:"Tema 2", texto:"Las respuestas chunked permiten:", opciones:{A:"Modificar TTL DNS",B:"Evitar el envío de cabeceras",C:"Enviar partes del cuerpo sin conocer su tamaño final",D:"Enviar paquetes en orden inverso"}, correcta:"C", explicacion:"" },
+
+  { tema:"Tema 2", texto:"Las respuestas DNS grandes pueden usar:", opciones:{A:"TCP",B:"HTTP",C:"Solo UDP",D:"ARP"}, correcta:"A", explicacion:"" },
+
+  { tema:"Tema 2", texto:"Una política de TTL bajo permite:", opciones:{A:"Eliminar autoritativos",B:"Menos tráfico",C:"Actualizaciones más rápidas",D:"Mayor latencia obligatoria"}, correcta:"C", explicacion:"" },
+
+  { tema:"Tema 2", texto:"DNS usa típicamente:", opciones:{A:"TCP 25",B:"UDP puerto 53",C:"ICMP 8",D:"UDP 110"}, correcta:"B", explicacion:"" },
+
+  { tema:"Tema 2", texto:"IMAP permite:", opciones:{A:"Forzar envío SMTP",B:"Acceder al buzón manteniendo mensajes en el servidor",C:"Descargar y borrar siempre",D:"Asignar direcciones IP"}, correcta:"B", explicacion:"" },
+
+  { tema:"Tema 2", texto:"Una CDN mejora rendimiento al:", opciones:{A:"Dividir las URL",B:"Reemplazar DNS",C:"Servir contenido desde nodos cercanos al cliente",D:"Crear rutas BGP internas"}, correcta:"C", explicacion:"" },
+
+  { tema:"Tema 2", texto:"El proceso de resolución suele comenzar en:", opciones:{A:"El router doméstico siempre",B:"El servidor web",C:"El servidor raíz directamente",D:"El resolutor local del cliente"}, correcta:"D", explicacion:"" },
+
+  { tema:"Tema 2", texto:"El comando SMTP HELO:", opciones:{A:"Envía adjuntos",B:"Identifica el cliente ante el servidor",C:"Activa DNSSEC",D:"Descarga correo"}, correcta:"B", explicacion:"" },
+
+  { tema:"Tema 2", texto:"Un servidor HTTP mantiene múltiples clientes mediante:", opciones:{A:"NAT interno",B:"Manejo concurrente de conexiones",C:"Una única conexión global",D:"Sin uso de sockets"}, correcta:"B", explicacion:"" },
+
+  { tema:"Tema 2", texto:"Un servidor mal configurado puede causar:", opciones:{A:"Mayor TTL DNS siempre",B:"No usar sockets",C:"Fugas de información por cabeceras incorrectas",D:"Menos seguridad en Ethernet"}, correcta:"C", explicacion:"" },
+
+  { tema:"Tema 2", texto:"Una zona DNS contiene:", opciones:{A:"La topología de red completa",B:"Las rutas BGP",C:"Registros gestionados por un operador",D:"Las MAC de los hosts"}, correcta:"C", explicacion:"" },
+
+  { tema:"Tema 2", texto:"La cabecera Cache-Control permite:", opciones:{A:"Gestionar almacenamiento en caché",B:"Crear subdominios",C:"Proteger la transmisión con TLS",D:"Dividir paquetes IP"}, correcta:"A", explicacion:"" },
+
+  { tema:"Tema 2", texto:"Un resolutor local:", opciones:{A:"Envía consultas al DNS configurado",B:"Es un servidor raíz",C:"Es POP3",D:"Es un switch"}, correcta:"A", explicacion:"" },
+
+  { tema:"Tema 2", texto:"POP3 utiliza el puerto:", opciones:{A:"110",B:"8080",C:"995",D:"25"}, correcta:"A", explicacion:"" },
+
+  { tema:"Tema 2", texto:"Una API moderna suele usar:", opciones:{A:"DHCP",B:"HTTP/HTTPS",C:"ARP",D:"SMTP"}, correcta:"B", explicacion:"" },
+
+  { tema:"Tema 2", texto:"El modelo cliente-servidor:", opciones:{A:"Requiere que todos los nodos sean iguales",B:"Impide paralelismo",C:"Se basa en un servidor atendiendo peticiones de múltiples clientes",D:"No usa puertos"}, correcta:"C", explicacion:"" },
+
+  { tema:"Tema 2", texto:"HTTPS añade:", opciones:{A:"Compresión IP",B:"Cifrado mediante TLS",C:"DNSSec automáticamente",D:"Encaminamiento adicional"}, correcta:"B", explicacion:"" },
+
+  { tema:"Tema 2", texto:"Una redirección 302 indica:", opciones:{A:"Movimiento temporal",B:"Error de servidor",C:"Permanente",D:"Falta de autenticación"}, correcta:"A", explicacion:"" },
+
+  { tema:"Tema 2", texto:"El método POST se usa para:", opciones:{A:"Enviar datos para ser procesados",B:"Eliminar recursos",C:"Solicitar solo cabeceras",D:"Consultar servidores raíz"}, correcta:"A", explicacion:"" },
+
+  { tema:"Tema 2", texto:"El comando SMTP MAIL FROM:", opciones:{A:"Fuerza borrado",B:"Indica el destinatario",C:"Define TTL",D:"Indica el remitente"}, correcta:"D", explicacion:"" },
+
+  { tema:"Tema 2", texto:"Un microservicio típico expone:", opciones:{A:"Tramas Ethernet",B:"Endpoints HTTP/HTTPS",C:"Bloques POP3",D:"Puertos ARP"}, correcta:"B", explicacion:"" },
+
+  { tema:"Tema 2", texto:"El diseño de aplicaciones modernas suele priorizar:", opciones:{A:"Interoperabilidad y uso de estándares abiertos",B:"Eliminar DNS",C:"Dependencia absoluta del sistema operativo",D:"No usar APIs"}, correcta:"A", explicacion:"" },
+
+  { tema:"Tema 2", texto:"Una aplicación tolerante a pérdidas suele preferir:", opciones:{A:"Conexiones persistentes obligatorias",B:"Entrega fiable estricta",C:"Uso sobre UDP",D:"Latencia elevada"}, correcta:"C", explicacion:"" },
+
+  { tema:"Tema 2", texto:"Una redirección 301 indica:", opciones:{A:"Error del servidor",B:"Acceso denegado",C:"Movimiento temporal",D:"Movimiento permanente"}, correcta:"D", explicacion:"" },
+
+  { tema:"Tema 2", texto:"Para reducir latencia, una aplicación puede:", opciones:{A:"Desactivar DNS",B:"Crear alias masivos",C:"Incrementar tamaño de cookies",D:"Usar caché local o CDN"}, correcta:"D", explicacion:"" },
+
+  { tema:"Tema 2", texto:"El método DELETE sirve para:", opciones:{A:"Crear un recurso",B:"Consultar TTL DNS",C:"Enviar cookies",D:"Eliminar un recurso"}, correcta:"D", explicacion:"" },
+
+  { tema:"Tema 2", texto:"Un servicio escalable debe:", opciones:{A:"Eliminar cachés",B:"Fijar TTL exageradamente alto",C:"Depender de un único servidor",D:"Repartir carga entre múltiples nodos"}, correcta:"D", explicacion:"" },
+
+  { tema:"Tema 2", texto:"Un MUA es:", opciones:{A:"Un firewall",B:"Un cliente de correo",C:"Un servidor raíz DNS",D:"Un proxy transparente"}, correcta:"B", explicacion:"" },
+
+  { tema:"Tema 2", texto:"Una ventaja de IMAP es:", opciones:{A:"Uso universal de UDP",B:"Sincronización entre dispositivos",C:"Desaparición del buzón remoto",D:"Cifrado obligatorio"}, correcta:"B", explicacion:"" },
+
+  { tema:"Tema 2", texto:"En P2P puro, cada nodo puede:", opciones:{A:"Enviar solo broadcast",B:"Actuar como cliente y servidor",C:"Usar solo UDP",D:"Depender de un único servidor central"}, correcta:"B", explicacion:"" },
+
+  { tema:"Tema 2", texto:"Para varios dispositivos, es preferible:", opciones:{A:"IMAP",B:"SMTP directo",C:"ARP seguro",D:"POP3 con borrado obligatorio"}, correcta:"A", explicacion:"" },
+
+  { tema:"Tema 2", texto:"Un protocolo de aplicación define:", opciones:{A:"La estructura y reglas de intercambio de mensajes",B:"El tamaño máximo de un cable",C:"La tabla ARP",D:"La potencia de transmisión"}, correcta:"A", explicacion:"" },
+
+  { tema:"Tema 2", texto:"Un juego en tiempo real prioriza:", opciones:{A:"No usar UDP nunca",B:"Latencia baja frente a fiabilidad absoluta",C:"Entrega perfecta aunque se congele",D:"Esperar retransmisiones siempre"}, correcta:"B", explicacion:"" },
+
+
+  { tema:"Tema 2", texto:"Un registro MX indica:", opciones:{A:"El ISP",B:"El servidor web",C:"Servidores de correo del dominio",D:"La zona padre"}, correcta:"C", explicacion:"" },
+
+  { tema:"Tema 2", texto:"Una ventaja de SMTP es:", opciones:{A:"Entrega cifrada por defecto",B:"Entrega entre servidores federados",C:"Entrega garantizada sin reintentos",D:"Funcionamiento sobre UDP"}, correcta:"B", explicacion:"" },
+
+  { tema:"Tema 2", texto:"SMTP se usa para:", opciones:{A:"Sincronizar carpetas",B:"Enviar correo a servidores",C:"Recibir correo en el cliente",D:"Hacer resolución inversa"}, correcta:"B", explicacion:"" },
+
+  { tema:"Tema 2", texto:"Un socket representa:", opciones:{A:"Una dirección MAC",B:"Un protocolo de enrutamiento",C:"Una antena inalámbrica",D:"El punto final de comunicación entre procesos"}, correcta:"D", explicacion:"" },
+
+  { tema:"Tema 2", texto:"El TTL DNS indica:", opciones:{A:"Tiempo que puede cachearse la respuesta",B:"Tiempo de vida del paquete IP",C:"Duración de cookies",D:"Tiempo de sesión TLS"}, correcta:"A", explicacion:"" },
+
+  { tema:"Tema 2", texto:"HTTP es un protocolo:", opciones:{A:"De resolución de nombres",B:"De encaminamiento",C:"Orientado a conexión a nivel de transporte",D:"De petición-respuesta"}, correcta:"D", explicacion:"" },
+
+  { tema:"Tema 2", texto:"La cabecera Authorization se usa para:", opciones:{A:"Crear aliases DNS",B:"Enviar credenciales",C:"Definir rutas IP",D:"Establecer MTU"}, correcta:"B", explicacion:"" },
+
+  { tema:"Tema 2", texto:"El estado de sesión suele mantenerse con:", opciones:{A:"Cookies o tokens",B:"Rutas OSPF",C:"CDN",D:"ARP estático"}, correcta:"A", explicacion:"" },
+
+  { tema:"Tema 2", texto:"Las conexiones persistentes permiten:", opciones:{A:"Modificar DNS dinámicamente",B:"Reutilizar la misma conexión para varias solicitudes",C:"Enviar tráfico sin puertos",D:"Reducir el tamaño de URLs"}, correcta:"B", explicacion:"" },
+
+  { tema:"Tema 2", texto:"SMTP funciona típicamente:", opciones:{A:"Sobre UDP",B:"Sobre ARP",C:"Sobre ICMP",D:"Sobre TCP"}, correcta:"D", explicacion:"" },
+
+  { tema:"Tema 2", texto:"DNS inverso resuelve:", opciones:{A:"Nombre → IP",B:"Correo → dominio",C:"IP → nombre",D:"URL → servidor"}, correcta:"C", explicacion:"" },
+
+  { tema:"Tema 2", texto:"Una URL identifica:", opciones:{A:"El tipo de cable físico",B:"Un recurso accesible en la web",C:"La dirección MAC de un host",D:"El servidor DNS raíz"}, correcta:"B", explicacion:"" },
+
+  { tema:"Tema 2", texto:"El puerto habitual de SMTP es:", opciones:{A:"25",B:"443",C:"21",D:"110"}, correcta:"A", explicacion:"" },
+
+  { tema:"Tema 2", texto:"BitTorrent divide archivos en:", opciones:{A:"Piezas distribuidas entre peers",B:"Pings DNS",C:"Fragmentos idénticos al MTU",D:"Un único bloque centralizado"}, correcta:"A", explicacion:"" },
+
+  { tema:"Tema 2", texto:"Un anexo típico SMTP se envía como:", opciones:{A:"Contenido MIME codificado",B:"Cadenas DNS",C:"Script ARP",D:"IPv6 incrustado"}, correcta:"A", explicacion:"" },
+
+  { tema:"Tema 2", texto:"Un MTA es:", opciones:{A:"Un lector IMAP",B:"Un archivo de log",C:"Una MAC virtual",D:"Un servidor que transfiere correo"}, correcta:"D", explicacion:"" },
+
+  { tema:"Tema 2", texto:"Una DHT permite:", opciones:{A:"Localizar recursos sin servidor central",B:"Repetir tráfico HTTP",C:"Crear alias DNS",D:"Asignar MACs"}, correcta:"A", explicacion:"" },
+
+  { tema:"Tema 2", texto:"BitTorrent mejora rendimiento porque:", opciones:{A:"El servidor central envía todo",B:"No hay verificación",C:"Usa siempre UDP",D:"Los peers suben simultáneamente a otros peers"}, correcta:"D", explicacion:"" },
+
+  { tema:"Tema 2", texto:"Un servidor DNS autoritativo tiene:", opciones:{A:"Respuestas en caché únicamente",B:"Control sobre SMTP",C:"Respuestas oficiales para un dominio",D:"Todas las zonas del mundo"}, correcta:"C", explicacion:"" },
+
+  { tema:"Tema 2", texto:"Una consulta iterativa implica que el servidor:", opciones:{A:"Modifica URLs",B:"Devuelve la mejor respuesta disponible, incluso referencias",C:"Resuelve completamente siempre",D:"Crea alias automáticamente"}, correcta:"B", explicacion:"" },
+
+  { tema:"Tema 2", texto:"Un servidor web altamente concurrente requiere:", opciones:{A:"Desactivar sockets",B:"Una única conexión global",C:"Eliminar TCP",D:"Manejo eficiente de múltiples conexiones"}, correcta:"D", explicacion:"" },
+
+  { tema:"Tema 2", texto:"La arquitectura P2P:", opciones:{A:"Evita la cooperación entre nodos",B:"Usa siempre TCP",C:"Permite que cada nodo actúe como cliente y servidor",D:"Requiere un servidor central único"}, correcta:"C", explicacion:"" },
+
+  { tema:"Tema 2", texto:"El comando SMTP RCPT TO:", opciones:{A:"Crea carpetas IMAP",B:"Indica destinatario",C:"Asigna puertos",D:"Indica asunto"}, correcta:"B", explicacion:"" },
+
+  { tema:"Tema 2", texto:"La cabecera Host permite:", opciones:{A:"Definir TTL",B:"Enviar cookies",C:"Establecer puertos dinámicos",D:"Indicar el dominio destino en servidores con hospedaje virtual"}, correcta:"D", explicacion:"" },
+
+  { tema:"Tema 2", texto:"En una URL, el esquema es:", opciones:{A:"La ruta del recurso",B:"La parte que indica el protocolo (ej. http)",C:"El número de puerto",D:"El dominio raíz"}, correcta:"B", explicacion:"" },
+
+  { tema:"Tema 2", texto:"Un registro TXT suele contener:", opciones:{A:"MTU",B:"Direcciones MAC",C:"Información arbitraria como validaciones",D:"Rutas OSPF"}, correcta:"C", explicacion:"" },
+
+  { tema:"Tema 2", texto:"DNS sirve para:", opciones:{A:"Mapear nombres en direcciones IP",B:"Leer correos",C:"Asignar rutas BGP",D:"Mapear MAC en puertos"}, correcta:"A", explicacion:"" },
+
+  { tema:"Tema 2", texto:"El método GET se usa para:", opciones:{A:"Enviar formularios",B:"Obtener un recurso sin modificarlo",C:"Eliminar recursos",D:"Actualizar DNS"}, correcta:"B", explicacion:"" },
+
+  { tema:"Tema 2", texto:"Un servidor se caracteriza por:", opciones:{A:"Ser siempre un router",B:"No usar puertos",C:"Esperar peticiones en un puerto bien conocido",D:"Encaminar paquetes"}, correcta:"C", explicacion:"" },
+
+  { tema:"Tema 2", texto:"DNS puede fallar si:", opciones:{A:"Se cierran puertos del navegador",B:"Caduca la caché incorrectamente",C:"Se envían paquetes TCP correctamente",D:"Se hace ping"}, correcta:"B", explicacion:"" },
+
+  { tema:"Tema 2", texto:"Content-Length indica:", opciones:{A:"Los bytes del cuerpo",B:"El tamaño de la cookie",C:"El método permitido",D:"El tiempo de vida de la conexión"}, correcta:"A", explicacion:"" },
+
+
+  { tema:"Tema 3", texto:"¿Qué es la ventana de congestión (cwnd) en TCP?", opciones:{ A:"Un parámetro que limita la cantidad de datos que puede tener el emisor “en vuelo” según el estado de la red",B:"El número máximo de conexiones permitidas por servidor",C:"El tamaño fijo de todas las tramas Ethernet",D:"El valor del temporizador de retransmisión" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 3", texto:"¿Qué representa rwnd en el control de flujo de TCP?", opciones:{ A:"El número de puertos disponibles en el host",B:"La ventana de congestión medida en segmentos",C:"La ventana de recepción anunciada por el receptor, medida en bytes",D:"El tiempo máximo de vida de un paquete IP" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 3", texto:"¿Qué caracteriza al establecimiento de conexión en TCP?", opciones:{ A:"Utiliza un handshake de tres vías (SYN, SYN+ACK, ACK) antes de transferir datos",B:"Necesita un handshake de cuatro vías utilizando solo ACK",C:"Solo se establece conexión si hay cifrado TLS",D:"No requiere ningún intercambio previo; se envían datos directamente" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 3", texto:"¿Qué ocurriría si un protocolo implementara control de congestión pero no control de flujo?", opciones:{ A:"La red podría mantenerse estable, pero un receptor lento podría desbordarse",B:"El receptor estaría protegido pero la red colapsaría",C:"Sería imposible retransmitir segmentos",D:"Nada, ambos controles son equivalentes" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 3", texto:"¿Cuál de los siguientes pares de conceptos está correctamente asociado?", opciones:{ A:"Control de flujo → capacidad del receptor; control de congestión → estado de la red",B:"Control de flujo → ruta elegida; control de congestión → prioridad de aplicación",C:"Control de flujo → velocidad del disco; control de congestión → consumo de CPU",D:"Control de flujo → estado de la red; control de congestión → tamaño del fichero" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 3", texto:"¿Cuál es el rango total de valores posibles para un número de puerto de transporte?", opciones:{ A:"De 1 a 255",B:"De 0 a 4 095",C:"De 1 a 10 000",D:"De 0 a 65 535" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 3", texto:"¿Qué papel juegan los ACK (acuses de recibo) en TCP?", opciones:{ A:"Identificar la aplicación origen",B:"Confirmar al emisor qué datos han llegado correctamente al receptor",C:"Reservar ancho de banda en toda la ruta",D:"Asignar una prioridad de envío a cada segmento" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 3", texto:"Si una aplicación bancaria on-line requiere integridad absoluta y confirmaciones de recepción, ¿qué protocolo de transporte se ajusta mejor?", opciones:{ A:"IGMP",B:"UDP",C:"TCP",D:"QUIC sin cifrado" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 3", texto:"¿Qué ocurre con cwnd y ssthresh cuando TCP detecta una pérdida de segmento por timeout o exceso de pérdidas?", opciones:{ A:"Se ignora la pérdida y cwnd sigue creciendo",B:"Se pone ssthresh a cero permanentemente",C:"Se suele fijar ssthresh = cwnd / 2 y reiniciar cwnd a 1 MSS",D:"Se duplican ambos valores para recuperar más rápido" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 3", texto:"En el mismo glosario, ¿qué se indica sobre QUIC?", opciones:{ A:"Que es un protocolo moderno basado en UDP con cifrado (TLS) integrado",B:"Que es un protocolo de nivel de aplicación para DNS",C:"Que es una variante de TCP sin numeración de secuencia",D:"Que es un mecanismo de control de flujo para SCTP" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 3", texto:"Durante el establecimiento de una conexión TCP, ¿qué sucede tras enviar el segmento SYN desde el cliente?", opciones:{ A:"El servidor envía directamente un FIN",B:"El servidor responde con un segmento SYN+ACK si está dispuesto a aceptar la conexión",C:"El router intermedio responde con un RESET",D:"El cliente recibe inmediatamente datos de aplicación" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 3", texto:"¿Qué describe mejor el mecanismo de Slow Start en TCP?", opciones:{ A:"La ventana de congestión comienza en 1 MSS y se duplica cada RTT hasta alcanzar un umbral",B:"La ventana de recepción siempre se mantiene constante",C:"La ventana de congestión empieza en un valor muy alto y se reduce linealmente",D:"El emisor envía solo un segmento por segundo durante toda la conexión" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 3", texto:"¿Qué representa la analogía del cartero y el secretario en el contexto de redes?", opciones:{ A:"El cartero es el nivel de red y el secretario es el nivel de transporte",B:"El cartero es el nivel de transporte y el secretario es la aplicación",C:"El cartero y el secretario representan ambos al nivel de aplicación",D:"El cartero es la capa física y el secretario la de enlace" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 3", texto:"¿Por qué se negocia el MSS durante el establecimiento de una conexión TCP?", opciones:{ A:"Para asignar una prioridad fija a la conexión",B:"Para evitar que los segmentos superen el MTU del enlace subyacente y se fragmenten",C:"Para reducir el tiempo de vida (TTL) de los paquetes",D:"Para aumentar artificialmente la congestión" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 3", texto:"¿Qué se entiende por multiplexación en el nivel de transporte?", opciones:{ A:"Dividir un mensaje en bits individuales",B:"Reducir el tamaño de las cabeceras en todos los protocolos",C:"Duplicar cada segmento para aumentar la fiabilidad",D:"Combinar datos de múltiples procesos de un host para enviarlos a través de la misma conexión de red" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 3", texto:"¿A qué llamamos puerto en el nivel de transporte?", opciones:{ A:"A un identificador numérico que se asocia a una aplicación o proceso",B:"A un tipo especial de router de borde",C:"A una dirección MAC de la tarjeta de red",D:"A una interfaz física donde se conecta el cable de red" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 3", texto:"¿Cuál de estas afirmaciones sobre QUIC es correcta según el tema?", opciones:{ A:"Es un protocolo de aplicación para correo electrónico",B:"Es una versión más rápida de TCP que funciona directamente sobre IP sin puertos",C:"Es un protocolo moderno que funciona sobre UDP e integra de forma nativa TLS y control de congestión",D:"Es un reemplazo de Ethernet en redes locales" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 3", texto:"Cuando la ventana de recepción (rwnd) es grande pero la ventana de congestión (cwnd) es pequeña, ¿qué limita realmente la tasa de envío?", opciones:{ A:"El número de puertos abiertos",B:"La ventana de recepción (rwnd)",C:"La ventana de congestión (cwnd)",D:"El tamaño del MSS" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 3", texto:"¿Por qué el control de flujo y el control de congestión deben coexistir y coordinarse en TCP?", opciones:{ A:"Porque uno protege al receptor de desbordarse y el otro protege a la red de saturarse",B:"Porque ambos gestionan exclusivamente la elección de puertos",C:"Porque ambos se encargan de cifrar los datos",D:"Porque ambos dependen de la dirección MAC" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 3", texto:"¿Qué asegura el nivel de transporte respecto a los datos que llegan a un host destino?", opciones:{ A:"Que siempre se guardan en disco antes de procesarse",B:"Que se entregan a la aplicación o proceso adecuado dentro de ese host",C:"Que solo se entregan a servicios de correo electrónico",D:"Que se muestran en pantalla inmediatamente" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 3", texto:"¿En qué consiste el control de congestión en TCP?", opciones:{ A:"En ordenar los segmentos en el receptor",B:"En cambiar la dirección MAC de los hosts",C:"En asignar nuevos puertos a las aplicaciones",D:"En ajustar la velocidad de envío del emisor cuando la red muestra signos de saturación" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 3", texto:"¿En qué rango se sitúan los puertos bien conocidos (well-known ports)?", opciones:{ A:"De 0 a 1 023",B:"De 0 a 255",C:"De 49 152 a 65 535",D:"De 1 024 a 4 095" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 3", texto:"¿Qué caracteriza al puerto de origen en una comunicación TCP típica de un cliente?", opciones:{ A:"Es siempre el puerto 80",B:"Es elegido dinámicamente por el sistema operativo del cliente",C:"Debe estar necesariamente entre 0 y 1023",D:"Lo fija manualmente el usuario en cada conexión" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 3", texto:"En el glosario del tema, ¿qué se indica sobre el término ssthresh?", opciones:{ A:"Que es el identificador numérico de un puerto bien conocido",B:"Que es el umbral que marca la transición entre Slow Start y Congestion Avoidance en TCP",C:"Que es el tamaño máximo del MSS",D:"Que es el valor del RTT mínimo observado" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 3", texto:"Si una aplicación multimedia puede aceptar la pérdida ocasional de paquetes pero no tolera grandes retardos, ¿qué combinación es la más razonable?", opciones:{ A:"Uso de ICMP como protocolo de transporte",B:"Uso de UDP con mecanismos propios de corrección en la aplicación",C:"Uso de SCTP con multihoming",D:"Uso de TCP con una ventana de congestión gigantesca" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 3", texto:"En entornos de IoT con dispositivos de recursos muy limitados, ¿qué combinación de protocolo de aplicación y transporte es habitual?", opciones:{ A:"SMTP sobre SCTP",B:"FTP sobre UDP",C:"CoAP sobre UDP",D:"HTTP sobre TCP" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 3", texto:"¿Qué ocurre cuando el receptor anuncia una ventana de tamaño 0 en TCP?", opciones:{ A:"El emisor detiene el envío de datos y envía sondeos periódicos para ver si la ventana vuelve a abrirse",B:"La conexión se cierra inmediatamente",C:"El emisor aumenta la tasa de envío para vaciar los buffers",D:"El emisor ignora el valor y sigue enviando al mismo ritmo" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 3", texto:"En aplicaciones WebRTC, ¿por qué se aprovecha UDP junto con mecanismos adicionales en la capa de aplicación?", opciones:{ A:"Porque UDP impide la congestión en redes móviles",B:"Porque UDP garantiza reordenación perfecta de todos los paquetes",C:"Porque se busca baja latencia para audio y vídeo, pero se añaden controles propios para gestionar pérdidas y calidad",D:"Porque UDP cifra automáticamente los datos" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 3", texto:"¿Qué comportamiento tiene TCP cuando cwnd es mayor o igual que ssthresh?", opciones:{ A:"Reinicia Slow Start desde 1 MSS",B:"Entra en fase de Congestion Avoidance con crecimiento lineal de cwnd",C:"Pasa a utilizar UDP en lugar de TCP",D:"Cierra inmediatamente la conexión" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 3", texto:"Cuando los buffers de los routers de la red comienzan a llenarse por exceso de tráfico, ¿qué fenómeno se observa?", opciones:{ A:"Los routers dejan de enviar ACKs",B:"Aumentan los tiempos de cola y empiezan a perderse paquetes",C:"Disminuye automáticamente la latencia sin pérdida",D:"Se deshabilita el uso de puertos dinámicos" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 3", texto:"¿Qué significan las banderas SYN y FIN en TCP?", opciones:{ A:"SYN indica datos urgentes y FIN datos normales",B:"SYN marca un error y FIN indica retransmisión",C:"SYN y FIN solo se usan en UDP",D:"SYN marca el inicio de una conexión y FIN marca la finalización ordenada de la misma" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 3", texto:"¿Qué representa el MSS (Maximum Segment Size) en TCP?", opciones:{ A:"El tamaño máximo de una trama Ethernet",B:"El tamaño máximo de la ventana de congestión",C:"El número máximo de conexiones simultáneas permitidas",D:"El tamaño máximo de datos útiles que puede transportar un segmento TCP sin fragmentarse" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 3", texto:"¿Qué ventaja específica ofrece SCTP gracias al multistreaming?", opciones:{ A:"Hace innecesario el control de flujo",B:"Permite cifrar sin usar TLS",C:"Evita que la pérdida en un flujo bloquee el resto de flujos dentro de la misma conexión",D:"Impide la multiplexación por puertos" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 3", texto:"En la apertura de una página web típica usando HTTPS, ¿qué uso hace el navegador del puerto 53 UDP?", opciones:{ A:"Lo utiliza para cifrar el tráfico HTTP",B:"Lo utiliza para establecer la conexión TCP con el servidor web",C:"Lo utiliza para consultar el servicio DNS y resolver el nombre del servidor a una dirección IP",D:"Lo utiliza para retransmitir los segmentos perdidos de TCP" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 3", texto:"¿Qué par puerto-servicio está correctamente asociado?", opciones:{ A:"23 → SSH",B:"80 → HTTP",C:"25 → DNS",D:"53 → SMTP" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 3", texto:"¿Sobre qué se construye el nivel de transporte para ofrecer sus servicios a las aplicaciones?", opciones:{ A:"Exclusivamente sobre enlaces punto a punto dedicados",B:"Sobre el sistema de ficheros del sistema operativo",C:"Sobre el servicio de entrega entre hosts que ofrece el nivel de red (IP)",D:"Directamente sobre el hardware de la capa física" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 3", texto:"¿Qué característica de QUIC reduce el número de handshakes necesarios respecto a la pila clásica TCP + TLS?", opciones:{ A:"Integra TLS 1.3 directamente en el propio protocolo de transporte y permite 0-RTT en reconexiones",B:"Elimina el cifrado para evitar negociaciones",C:"Obliga a realizar tres handshakes consecutivos",D:"Utiliza ICMP para negociar claves" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 3", texto:"¿Qué efecto tiene AIMD cuando varios emisores TCP comparten un enlace de red?", opciones:{ A:"Obliga a que todos los flujos usen la misma ventana de recepción",B:"Hace que un único flujo acapare todo el ancho de banda",C:"Tiende a repartir equitativamente el ancho de banda entre los distintos flujos",D:"Impide que se pueda compartir el enlace" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 3", texto:"En la curva típica de rendimiento frente a tasa de envío, ¿qué ocurre en la fase de colapso por congestión?", opciones:{ A:"El rendimiento sigue creciendo indefinidamente",B:"El rendimiento se hace negativo",C:"El rendimiento cae bruscamente al seguir aumentando la tasa de envío",D:"La tasa de envío no influye en el rendimiento" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 3", texto:"¿Qué comportamiento tiene TCP cuando cwnd es menor que ssthresh?", opciones:{ A:"Detiene el envío de datos",B:"Opera en fase de Avoidance con crecimiento lineal",C:"Opera en fase de Slow Start con crecimiento exponencial de cwnd",D:"Desactiva el control de congestión" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 3", texto:"¿Qué ventaja aporta HTTP/3 al ejecutarse sobre QUIC en lugar de sobre TCP como HTTP/2?", opciones:{ A:"Elimina completamente la necesidad de cifrar el tráfico",B:"Impide que se puedan retransmitir datos perdidos",C:"Reduce la latencia inicial gracias a handshakes más rápidos y evita bloqueos de cabeceras gracias a flujos independientes",D:"Permite usar más puertos bien conocidos simultáneamente" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 3", texto:"¿Cómo se transporta un segmento TCP a través de la red IP?", opciones:{ A:"Dentro de un datagrama UDP con Protocolo = 6",B:"Encapsulado dentro de un datagrama IP con el campo Protocolo = 6",C:"Dentro de una trama Ethernet con Protocolo = 17",D:"Como un paquete independiente sin encapsulación" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 3", texto:"En el contexto de aplicaciones, ¿qué protocolo de transporte se suele usar para la señalización de VoIP (por ejemplo, SIP)?", opciones:{ A:"TCP",B:"ARP",C:"ICMP",D:"UDP" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 3", texto:"En una aplicación de voz sobre IP (VoIP), donde pequeñas pérdidas son tolerables pero el retardo no, ¿qué protocolo de transporte es habitual?", opciones:{ A:"TCP",B:"SCTP",C:"UDP",D:"ICMP" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 3", texto:"¿Qué datos identifican de forma única una conexión TCP?", opciones:{ A:"Dirección MAC origen y destino",B:"IP origen, puerto origen, IP destino y puerto destino",C:"Solo los puertos de origen y destino",D:"Solo las direcciones IP de origen y destino" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 3", texto:"¿Qué idea básica hay detrás del algoritmo AIMD (Additive Increase, Multiplicative Decrease) en TCP?", opciones:{ A:"Duplicar cwnd en cada RTT siempre",B:"Incrementar cwnd linealmente cuando no hay pérdidas y reducirlo a la mitad cuando se detecta congestión",C:"Reducir cwnd en una unidad ante cada ACK",D:"Aumentar y disminuir cwnd de forma aleatoria" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 3", texto:"En la misma secuencia de apertura de página web, ¿qué papel juega TCP tras resolver la dirección IP del servidor?", opciones:{ A:"Establece una conexión fiable mediante el handshake de tres vías y transporta los datos HTTP",B:"Selecciona la ruta de menor coste entre routers",C:"Cifra el tráfico mediante TLS",D:"Resuelve el nombre de dominio a la IP" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 3", texto:"En un entorno 5G con alta variabilidad del RTT, ¿por qué son útiles algoritmos de control de congestión adaptativos como BBR?", opciones:{ A:"Porque desactivan la detección de pérdidas",B:"Porque fijan una tasa constante independientemente de la red",C:"Porque ajustan la tasa de envío según latencia y ancho de banda reales, mejorando el rendimiento en redes inestables",D:"Porque obligan a usar únicamente TCP Reno" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 3", texto:"¿Qué ocurriría si un protocolo implementara control de flujo pero no control de congestión?", opciones:{ A:"El protocolo dejaría de poder multiplexar puertos",B:"La red se mantendría estable pero los receptores se desbordarían",C:"Los receptores estarían protegidos, pero la red podría colapsar por saturación de routers",D:"No habría diferencia con TCP" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 3", texto:"Si el MTU del enlace es de 1500 bytes, ¿qué valor típico de MSS se utiliza en TCP?", opciones:{ A:"Aproximadamente 1460 bytes",B:"512 bytes",C:"Exactamente 1500 bytes",D:"Aproximadamente 64 bytes" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 3", texto:"¿Qué hace TCP cuando una aplicación genera un flujo de 10 000 bytes?", opciones:{ A:"Lo divide en varios segmentos cuyo tamaño no supera el MSS",B:"Descarta el flujo por exceder el tamaño máximo permitido",C:"Envía todo en un único segmento gigante",D:"Lo convierte en datagramas UDP" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 3", texto:"¿Qué condición debe cumplirse para que el emisor pueda seguir enviando datos sin esperar ACKs adicionales en TCP?", opciones:{ A:"Que la red sea de tipo local (LAN)",B:"Que el receptor tenga exactamente la misma capacidad de procesamiento",C:"Que la cantidad de datos “en vuelo” no supere el mínimo entre rwnd y cwnd",D:"Que la cantidad de datos enviados sea menor que el MSS" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 3", texto:"En el mismo contexto de VoIP, ¿qué protocolo de transporte suele transportar la propia voz en tiempo real?", opciones:{ A:"TCP",B:"IGMP",C:"SCTP",D:"UDP" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 3", texto:"¿Qué mejora proporciona Fast Recovery frente a reiniciar siempre Slow Start tras una pérdida?", opciones:{ A:"Permite usar puertos por encima de 65 535",B:"Elimina por completo la necesidad de retransmitir segmentos",C:"Desactiva el control de congestión",D:"Evita reducir cwnd hasta 1 MSS y permite recuperar el caudal de forma más suave" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 3", texto:"¿Qué afirma la presentación sobre el flujo de datos en TCP?", opciones:{ A:"Se presenta a la aplicación como un flujo continuo de bytes sin errores ni duplicados",B:"Se almacena siempre en disco antes de entregarse",C:"Se presenta como mensajes independientes sin orden",D:"Debe ser convertido a formato XML" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 3", texto:"¿Qué es el RTT (Round Trip Time) en el contexto de TCP?", opciones:{ A:"El tiempo que tarda en abrirse una página web",B:"El tiempo que tarda un segmento en ir del emisor al receptor y volver su ACK",C:"La vida útil máxima de un paquete IP",D:"El tiempo de propagación unidireccional por la fibra" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 3", texto:"¿Cuál de las siguientes afirmaciones describe mejor a UDP?", opciones:{ A:"Protocolo de aplicación para correo electrónico",B:"Protocolo de transporte orientado a conexión con control de flujo",C:"Protocolo de red encargado del enrutamiento",D:"Protocolo de transporte sin conexión, sin fiabilidad garantizada y con mínima sobrecarga" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 3", texto:"¿Cómo detecta TCP indirectamente la congestión en la red?", opciones:{ A:"Comprobando el tamaño de los ficheros transmitidos",B:"Midiendo la temperatura de los routers",C:"Mediante pérdida de segmentos, ACKs duplicados y aumento del RTT",D:"Contando el número de puertos abiertos en el servidor" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 3", texto:"¿Cómo se denomina la unidad de datos de TCP (PDU) en el nivel de transporte?", opciones:{ A:"Paquete",B:"Segmento",C:"Datagrama",D:"Trama" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 3", texto:"¿Qué característica combina SCTP respecto a TCP y UDP?", opciones:{ A:"Funciona solo en redes locales y no usa puertos",B:"Solo se utiliza para tráfico de correo electrónico",C:"Es sin conexión y no fiable como UDP, pero basado en flujos de bytes como TCP",D:"Es orientado a conexión y fiable como TCP, pero basado en mensajes como UDP" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 3", texto:"¿Cuál de los siguientes servicios es típico de una aplicación que utiliza UDP?", opciones:{ A:"Consultas DNS rápidas",B:"Transacciones bancarias que no toleran pérdida",C:"Transferencia fiable de ficheros grandes",D:"Sesiones SSH interactivas" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 3", texto:"¿Qué ocurre típicamente al cerrar una conexión TCP de forma ordenada?", opciones:{ A:"Ambos extremos dejan de enviar segmentos sin anunciar nada",B:"Cada extremo envía un segmento FIN y recibe un ACK correspondiente",C:"El cierre se realiza siempre mediante ICMP",D:"El servidor envía un SYN final al cliente" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 3", texto:"¿Qué caracteriza al puerto de destino en una comunicación típica cliente-servidor?", opciones:{ A:"Es irrelevante para la entrega de datos",B:"Siempre es mayor que 49152",C:"Suele ser un puerto bien conocido asociado al servicio ofrecido",D:"Es un número aleatorio elegido por el cliente" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 3", texto:"¿Cuál es la diferencia clave entre TCP y UDP en cuanto a servicios ofrecidos?", opciones:{ A:"TCP siempre cifra la información; UDP nunca puede hacerlo",B:"TCP funciona solo en redes locales; UDP solo en Internet",C:"TCP no permite multiplexación por puertos; UDP sí",D:"TCP prioriza integridad y orden; UDP prioriza velocidad y simplicidad" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 3", texto:"En entornos de mensajería IoT donde se necesita una sesión persistente pero ligera, ¿qué protocolo se menciona en el tema?", opciones:{ A:"SSH sobre UDP",B:"MQTT sobre TCP",C:"SMTP sobre UDP",D:"DNS sobre UDP" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 3", texto:"¿Por qué las variantes modernas de TCP como Cubic y BBR se han desarrollado?", opciones:{ A:"Para evitar el uso de ACKs y números de secuencia",B:"Para optimizar el rendimiento y la estabilidad según el tipo de red (alta velocidad, móvil, centro de datos, etc.)",C:"Para sustituir totalmente a UDP en aplicaciones de tiempo real",D:"Para eliminar por completo la necesidad de cwnd" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 3", texto:"En una transferencia de archivos grandes donde no se aceptan pérdidas, ¿qué protocolo de transporte se recomienda?", opciones:{ A:"ICMP",B:"ARP",C:"TCP",D:"UDP" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 3", texto:"¿Para qué utiliza TCP la información sobre el RTT?", opciones:{ A:"Para ajustar los temporizadores de retransmisión",B:"Para cambiar la dirección IP de origen",C:"Para elegir el puerto de destino",D:"Para decidir si usa TCP o UDP" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 3", texto:"¿Para qué sirve el control de flujo en TCP?", opciones:{ A:"Para asignar prioridades entre aplicaciones",B:"Para cifrar los datos en tránsito",C:"Para elegir la mejor ruta entre routers",D:"Para que el emisor no sobrecargue los buffers del receptor" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 3", texto:"¿Por qué QUIC se implementa principalmente en espacio de usuario en lugar de en el kernel?", opciones:{ A:"Para poder funcionar sin sockets",B:"Para impedir que pueda cifrar el tráfico",C:"Para evitar el uso de puertos",D:"Para facilitar su evolución rápida sin depender de actualizaciones del sistema operativo" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 3", texto:"¿Qué decisión debe tomar un diseñador de aplicación al elegir entre TCP y UDP según el tema?", opciones:{ A:"Seleccionar siempre TCP porque es más seguro",B:"Equilibrar la necesidad de integridad y orden frente a la prioridad por latencia y simplicidad",C:"Evitar usar puertos bien conocidos",D:"Seleccionar siempre UDP porque es más moderno" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 3", texto:"¿Qué significado tiene el término multihoming en SCTP?", opciones:{ A:"Cada aplicación puede usar varios puertos simultáneos",B:"Cada router puede usar varias tablas de encaminamiento",C:"Cada datagrama se envía por dos redes físicas a la vez",D:"Cada extremo puede disponer de varias interfaces de red para tolerar fallos de camino" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 3", texto:"¿Qué ventaja de QUIC se destaca para conexiones que cambian de red, como en movilidad?", opciones:{ A:"Requiere reiniciar siempre la conexión al cambiar de red",B:"Solo funciona si la IP se mantiene fija",C:"Mantiene la sesión aunque cambie la dirección IP subyacente",D:"Impide completamente cualquier cambio de IP" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 3", texto:"¿Qué característica es propia de UDP frente a TCP?", opciones:{ A:"Entrega ordenada y garantizada de todos los segmentos",B:"Control de congestión basado en AIMD",C:"Cabecera muy pequeña (8 bytes) y baja latencia",D:"Handshake inicial de tres vías antes de enviar datos" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 3", texto:"En el caso contrario, cuando la red está poco congestionada (cwnd grande) pero el receptor anuncia una ventana pequeña (rwnd), ¿qué limita la tasa de envío?", opciones:{ A:"El valor del TTL de IP",B:"La ruta elegida por los routers",C:"La ventana de congestión (cwnd)",D:"La ventana de recepción (rwnd)" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 3", texto:"¿Qué indica la ventana de recepción (rwnd) que anuncia el receptor en TCP?", opciones:{ A:"La latencia máxima tolerable",B:"La cantidad de memoria libre en el router",C:"El número máximo de conexiones simultáneas",D:"La cantidad de datos que el emisor puede seguir enviando sin desbordar al receptor" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 3", texto:"¿Qué ventaja proporciona el uso de SCTP en sistemas críticos como señalización telefónica?", opciones:{ A:"Permite prescindir del nivel de red",B:"Reduce la latencia eliminando los ACKs",C:"Aporta tolerancia a fallos mediante multihoming y evita bloqueos entre flujos gracias al multistreaming",D:"Evita la congestión sin necesidad de algoritmos" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 3", texto:"¿Qué es un socket en el contexto del nivel de transporte?", opciones:{ A:"El par formado por dirección IP y número de puerto",B:"El identificador único de la tarjeta de red física",C:"Un tipo especial de firewall",D:"El nombre simbólico de un servicio" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 3", texto:"¿Qué mecanismo permite al nivel de transporte distinguir entre diferentes procesos dentro de un mismo host?", opciones:{ A:"El uso de números de puerto",B:"El uso de identificadores de usuario del sistema operativo",C:"El uso de direcciones MAC",D:"El uso de direcciones físicas de memoria" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 3", texto:"¿Qué objetivo persigue la transferencia fiable de datos en TCP?", opciones:{ A:"Detectar pérdidas, duplicados y desorden, y corregirlos mediante ACKs y retransmisiones",B:"Garantizar que todos los routers usen la misma tabla de encaminamiento",C:"Evitar el uso de puertos dinámicos",D:"Asegurar que nunca haya congestión en ningún enlace" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 3", texto:"¿Cuál de los siguientes NO es un servicio típico que puede ofrecer el nivel de transporte?", opciones:{ A:"Control de congestión en la red",B:"Control de flujo entre emisor y receptor",C:"Asignación de direcciones IP globales",D:"Fiabilidad extremo a extremo" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 3", texto:"¿Qué papel desempeña el umbral de congestión (ssthresh) en TCP?", opciones:{ A:"Marca el punto a partir del cual TCP pasa de crecimiento exponencial a crecimiento lineal de cwnd",B:"Indica el número máximo de puertos disponibles",C:"Define el tamaño mínimo del MSS",D:"Controla exclusivamente el tamaño de la ventana de recepción" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 3", texto:"¿Cuál es la función principal del nivel de transporte en el modelo TCP/IP?", opciones:{ A:"Definir el formato de los cables físicos",B:"Encargarse del enrutamiento entre routers",C:"Asignar direcciones IP a los dispositivos",D:"Proporcionar comunicación lógica de extremo a extremo entre procesos en hosts distintos" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 3", texto:"¿Qué enfoque de estrategia de control de congestión aplica principalmente TCP clásico?", opciones:{ A:"Estrategia de prevención: reserva ancho de banda por adelantado en todos los routers",B:"Estrategia estática sin adaptación",C:"Estrategia de predicción basada en IA en todos los nodos intermedios",D:"Estrategia de reacción: detecta congestión y reduce la tasa de envío" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 3", texto:"¿Cuál de las siguientes afirmaciones describe mejor a TCP?", opciones:{ A:"Protocolo de aplicación para páginas web",B:"Protocolo de red utilizado solo en LAN",C:"Protocolo de transporte orientado a conexión, fiable y con control de flujo y de congestión",D:"Protocolo de transporte sin conexión y sin control" }, correcta:"C", explicacion:"" },
+
+{ tema:"Tema 4", texto:"El uso de ARP malicioso para suplantar IP–MAC en una LAN se conoce como…", opciones:{ A:"BGP hijacking",B:"ICMP flooding",C:"ARP spoofing o ARP poisoning",D:"DHCP leasing" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 4", texto:"¿Qué indica el bit MF (More Fragments) en IPv4?", opciones:{ A:"Que es el primer fragmento del datagrama",B:"Que no queda ningún fragmento más",C:"Que hay fragmentos posteriores del mismo datagrama",D:"Que el datagrama es de control" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 4", texto:"¿Cuál es el tamaño máximo teórico de un datagrama IPv4?", opciones:{ A:"1 500 bytes",B:"65 535 bytes",C:"4 294 967 296 bytes",D:"65 536 bytes" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 4", texto:"¿Qué operación lógica se usa para obtener la dirección de red a partir de IP y máscara?", opciones:{ A:"DES cifrado",B:"XOR bit a bit",C:"OR bit a bit",D:"AND bit a bit" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 4", texto:"Una desventaja clave del direccionamiento con clases es…", opciones:{ A:"La incompatibilidad con IPv4",B:"La imposibilidad de usar máscaras",C:"El desperdicio de direcciones por tamaños fijos de red",D:"La falta de soporte para multicast" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 4", texto:"Si una red se anuncia en Internet como 200.10.8.0/21, esto implica que…", opciones:{ A:"Es una red privada RFC 1918",B:"Se está usando una máscara por defecto de Clase C",C:"Se están agregando varias redes contiguas en un bloque mayor",D:"No es posible hacer subnetting interno" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 4", texto:"¿Qué permite VLSM frente al subnetting clásico con máscara fija?", opciones:{ A:"Eliminar el uso de máscaras por completo",B:"Usar solo clases A, B o C",C:"Asignar siempre el mismo tamaño de subred",D:"Usar máscaras de distinta longitud en subredes diferentes" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 4", texto:"En planificación con VLSM, es buena práctica asignar primero…", opciones:{ A:"Las subredes que necesitan más hosts",B:"Las subredes multicast",C:"Las subredes de prueba",D:"Las subredes más pequeñas" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 4", texto:"¿Cuántos bits tiene una dirección IPv4?", opciones:{ A:"16 bits",B:"128 bits",C:"32 bits",D:"48 bits" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 4", texto:"En diseño de redes, ¿por qué interesa reducir el número de prefijos anunciados mediante CIDR?", opciones:{ A:"Para desactivar el control de congestión",B:"Para simplificar las tablas de enrutamiento y mejorar el rendimiento de los routers",C:"Para aumentar el número de difusiones (broadcast)",D:"Para no usar máscaras de subred" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 4", texto:"Fragmento con Total Length=1500 y Offset=185: bytes previos?", opciones:{ A:"185",B:"2960",C:"370",D:"1480" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 4", texto:"Las direcciones de Clase D (224.0.0.0–239.255.255.255) se usan para…", opciones:{ A:"Multicast",B:"Broadcast limitado",C:"Direcciones privadas",D:"Loopback" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 4", texto:"MTU=1400, datos máximos sin fragmentación:", opciones:{ A:"1392",B:"1360",C:"1380",D:"1400" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 4", texto:"En la red 192.168.50.0/26, ¿cuál es la primera IP de host?", opciones:{ A:"192.168.50.1",B:"192.168.50.0",C:"192.168.50.2",D:"192.168.50.64" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 4", texto:"¿Cuándo NO hay fragmentación?", opciones:{ A:"Paquete menor que MTU",B:"DF=0",C:"Paquete mayor que MTU",D:"MTU variable" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 4", texto:"¿Qué indica el bit DF (Don't Fragment) en IPv4?", opciones:{ A:"Que el datagrama es de baja prioridad",B:"Que el datagrama no debe fragmentarse en tránsito",C:"Que el datagrama es el último fragmento",D:"Que el datagrama debe ir cifrado" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 4", texto:"Asignado /25 y luego /27 en 192.168.10.0/24, ¿cuál es la siguiente subred libre?", opciones:{ A:"192.168.10.160/27",B:"192.168.10.128/27",C:"192.168.10.192/27",D:"192.168.10.96/27" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 4", texto:"Red agregada para 10.2.0.0–10.2.127.0:", opciones:{ A:"/18",B:"/17",C:"/16",D:"/15" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 4", texto:"¿Qué campo IPv4 se decrementa en cada router para evitar bucles infinitos?", opciones:{ A:"Time to Live (TTL)",B:"Identification",C:"Flags",D:"Source Address" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 4", texto:"La dirección 255.255.255.255 se usa como…", opciones:{ A:"Dirección de gateway",B:"Broadcast limitado en la red local",C:"Dirección de loopback",D:"Dirección IP pública por defecto" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 4", texto:"En direccionamiento con clases, ¿qué rango pertenece a la Clase B?", opciones:{ A:"0.0.0.0 a 127.255.255.255",B:"224.0.0.0 a 239.255.255.255",C:"128.0.0.0 a 191.255.255.255",D:"192.0.0.0 a 223.255.255.255" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 4", texto:"En el contexto del nivel de red, “interconexión de redes heterogéneas” significa…", opciones:{ A:"Eliminar routers y usar solo switches",B:"Reemplazar IPv4 por direcciones MAC",C:"Convertir todas las redes a la misma tecnología física",D:"Permitir que redes con distintos medios y protocolos de nivel 2 se comuniquen mediante un esquema común de direccionamiento y encaminamiento" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 4", texto:"¿Para qué se reserva el rango 127.0.0.0/8?", opciones:{ A:"Loopback (comunicación interna del propio host)",B:"Direcciones APIPA",C:"Broadcast limitado",D:"Direcciones privadas de LAN" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 4", texto:"¿Qué rango pertenece a direcciones privadas de Clase A?", opciones:{ A:"169.254.0.0 – 169.254.255.255",B:"192.168.0.0 – 192.168.255.255",C:"172.16.0.0 – 172.31.255.255",D:"10.0.0.0 – 10.255.255.255" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 4", texto:"La máscara 255.255.255.192 corresponde en notación CIDR a…", opciones:{ A:"/25",B:"/27",C:"/24",D:"/26" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 4", texto:"Una IP es 10.4.9.255/22. ¿Es válida para host?", opciones:{ A:"No, es broadcast",B:"No, es red",C:"No, es multicast",D:"Sí" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 4", texto:"En ARP, ¿por qué los ARP Request se envían normalmente en broadcast?", opciones:{ A:"Porque solo los routers deben responder",B:"Porque es un requisito de DHCP",C:"Porque el emisor desconoce la MAC del destinatario",D:"Porque el emisor desconoce su propia IP" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 4", texto:"Red agregada para 10.2.0.0–10.2.127.0:", opciones:{ A:"/17",B:"/18",C:"/16",D:"/15" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 4", texto:"¿Qué campo de la cabecera IPv4 se usa para agrupar fragmentos del mismo datagrama?", opciones:{ A:"Identification",B:"Type of Service",C:"Protocol",D:"Header Checksum" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 4", texto:"¿En qué nivel del modelo TCP/IP se sitúa el protocolo IP?", opciones:{ A:"Nivel de red",B:"Nivel de enlace",C:"Nivel de aplicación",D:"Nivel de transporte" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 4", texto:"Un intervalo de exclusión en DHCP es…", opciones:{ A:"Un rango de direcciones IPv6",B:"Un rango reservado para multicast",C:"Un subconjunto de direcciones dentro del scope que no se asignan automáticamente",D:"Un rango de direcciones de loopback" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 4", texto:"Un bloque /17 cubre cuántas direcciones?", opciones:{ A:"65536",B:"32768",C:"8192",D:"16384" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 4", texto:"¿Qué campos de la cabecera IPv4 pueden cambiar en tránsito y obligan a recalcular el checksum?", opciones:{ A:"Type of Service y Protocol",B:"Direcciones IP de origen y destino",C:"TTL y campos relacionados con fragmentación",D:"Version y Source Address" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 4", texto:"¿Cuál de las siguientes NO es una función típica del nivel de red?", opciones:{ A:"Interconectar redes heterogéneas",B:"Controlar errores de trama física",C:"Implementar mecanismos de control de congestión",D:"Encaminar paquetes entre redes" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 4", texto:"Una ventaja de VLSM es…", opciones:{ A:"Eliminar la necesidad de planificación de direcciones",B:"Optimizar el uso de direcciones asignando subredes del tamaño justo",C:"Sustituir al protocolo IP",D:"Eliminar la fragmentación IP" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 4", texto:"Resumen para 192.168.64.0/24–192.168.127.0/24:", opciones:{ A:"/16",B:"/18",C:"/17",D:"/19" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 4", texto:"¿Qué máscara requiere una subred para 100 hosts?", opciones:{ A:"/28",B:"/25",C:"/26",D:"/27" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 4", texto:"En VLSM, para no cometer errores de planificación es crucial…", opciones:{ A:"Usar solo direcciones públicas",B:"Deshabilitar CIDR en los routers",C:"Evitar el solapamiento de rangos de subred",D:"Usar siempre la misma máscara en todas las subredes" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 4", texto:"Fragmento con MF=0 y Offset>0 es:", opciones:{ A:"Intermedio",B:"Último fragmento",C:"Incorrecto",D:"Primero" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 4", texto:"ARP (Address Resolution Protocol) se usa para…", opciones:{ A:"Obtener la dirección IP a partir de la MAC",B:"Asignar direcciones IP dinámicamente",C:"Encaminar paquetes entre redes remotas",D:"Obtener la dirección MAC a partir de una dirección IP en la misma LAN" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 4", texto:"El término “scope” (ámbito) en DHCP hace referencia a…", opciones:{ A:"El nombre de dominio del cliente",B:"El identificador de VLAN",C:"El tiempo de arranque del servidor",D:"El rango de direcciones IP que el servidor puede asignar" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 4", texto:"Offset=370, bytes anteriores?", opciones:{ A:"1480",B:"296",C:"2960",D:"3700" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 4", texto:"Una entrada ARP dinámica…", opciones:{ A:"Se aplica solo a direcciones multicast",B:"Se configura manualmente y nunca expira",C:"Se aprende automáticamente y expira tras cierto tiempo",D:"Se calcula a partir del checksum IPv4" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 4", texto:"La máscara 255.255.255.0 equivale en notación CIDR a…", opciones:{ A:"/32",B:"/24",C:"/16",D:"/8" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 4", texto:"La técnica que agrupa varias redes contiguas en un bloque mayor para anunciar una sola ruta se llama…", opciones:{ A:"Subnetting",B:"NAT estático",C:"Supernetting",D:"ARP proxy" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 4", texto:"En el contexto de rutas y CIDR, la agregación de rutas (route aggregation) permite…", opciones:{ A:"Dividir una red en redes más pequeñas",B:"Asignar IPs sin máscara",C:"Anunciar un único prefijo que representa varias redes más específicas",D:"Eliminar el uso de routers frontera" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 4", texto:"Fragmento con Total Length=1500 y Offset=185: bytes previos?", opciones:{ A:"185",B:"2960",C:"370",D:"1480" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 4", texto:"¿Qué unidad de datos maneja IP en el nivel de red?", opciones:{ A:"Segmento",B:"Flujo de bits",C:"Trama",D:"Datagrama IP" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 4", texto:"La técnica que permite dividir una red en varias subredes más pequeñas de igual tamaño se denomina…", opciones:{ A:"Tunneling",B:"Subnetting",C:"NAT",D:"Supernetting" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 4", texto:"El campo “Fragment Offset” en IPv4 expresa…", opciones:{ A:"La posición del fragmento respecto al inicio de la carga útil original",B:"El número de fragmentos totales",C:"La distancia al siguiente router",D:"La posición de la cabecera en la trama" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 4", texto:"MF=1 y Offset=0 significa:", opciones:{ A:"Intermedio",B:"Último fragmento",C:"Primer fragmento",D:"Incorrecto" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 4", texto:"Una limitación de RARP frente a DHCP es…", opciones:{ A:"Requiere un servidor RARP y solo proporciona la IP, sin más parámetros",B:"No puede funcionar en redes locales",C:"No utiliza direcciones MAC",D:"Depende de IPv6" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 4", texto:"Fragmento con MF=0 y Offset>0 es:", opciones:{ A:"Primero",B:"Incorrecto",C:"Último fragmento",D:"Intermedio" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 4", texto:"Con VLSM sobre 192.168.1.0/24, la subred para 60 hosts será:", opciones:{ A:"192.168.1.0/25",B:"192.168.1.64/26",C:"192.168.1.128/26",D:"192.168.1.0/26" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 4", texto:"¿Dónde se reensamblan los fragmentos de un datagrama IPv4?", opciones:{ A:"En cada router intermedio",B:"En el host de destino",C:"En el primer router de la ruta",D:"En el servidor DHCP" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 4", texto:"¿Qué envía el host que conoce su propia IP y quiere anunciarla sin haber recibido petición previa?", opciones:{ A:"Un ICMP Redirect",B:"Un Gratuitous ARP",C:"Un DHCP Offer",D:"Un Proxy ARP" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 4", texto:"¿Quién reensambla los fragmentos?", opciones:{ A:"Primer router",B:"Router ISP",C:"Todos los routers",D:"Host destino" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 4", texto:"Paquete 4000 bytes, MTU 1000: ¿fragmentos?", opciones:{ A:"6",B:"5",C:"4",D:"3" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 4", texto:"Con VLSM, ¿qué subred debe asignarse primero?", opciones:{ A:"La de 12 hosts",B:"Da igual",C:"La más pequeña",D:"La que tiene más hosts" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 4", texto:"En direccionamiento con clases, la máscara por defecto de Clase C es…", opciones:{ A:"255.255.0.0",B:"255.255.255.0",C:"255.0.0.0",D:"255.255.255.192" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 4", texto:"En 10.10.16.0/20, ¿cuál es la última IP de host?", opciones:{ A:"10.10.31.254",B:"10.10.16.255",C:"10.10.32.1",D:"10.10.15.255" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 4", texto:"La dirección 0.0.0.0 suele representar…", opciones:{ A:"Una dirección privada de Clase A",B:"Un host o red no inicializados o “este host/esta red”",C:"Una dirección de documentación",D:"Una dirección de broadcast" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 4", texto:"En direccionamiento con clases, ¿qué rango pertenece a la Clase C?", opciones:{ A:"128.0.0.0 a 191.255.255.255",B:"0.0.0.0 a 127.255.255.255",C:"192.0.0.0 a 223.255.255.255",D:"224.0.0.0 a 239.255.255.255" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 4", texto:"La “duración de la concesión” (lease time) en DHCP es…", opciones:{ A:"El tiempo durante el cual una IP permanece asignada a un cliente",B:"El tiempo de retardo de la cola de un router",C:"El tiempo para calcular el checksum",D:"El tiempo máximo de vida de un datagrama IP" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 4", texto:"El diagnóstico de errores a nivel de red incluye…", opciones:{ A:"Repetir automáticamente tramas erróneas a nivel físico",B:"Cifrar todo el tráfico extremo a extremo",C:"Aumentar la velocidad de reloj del medio",D:"Notificar problemas de entrega mediante mensajes específicos y supervisar el TTL" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 4", texto:"En direccionamiento con clases, la máscara por defecto de Clase B es…", opciones:{ A:"255.255.0.0",B:"255.255.255.0",C:"255.255.255.128",D:"255.0.0.0" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 4", texto:"En una red con DHCP, si el servidor no está disponible, un host típicamente…", opciones:{ A:"Utiliza RARP para conseguir IP",B:"No obtiene configuración completa y puede recurrir a APIPA",C:"Se autoconfigura siempre con 10.0.0.1",D:"Sigue recibiendo IPs públicas" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 4", texto:"¿Cuál de las siguientes NO es una ventaja de CIDR?", opciones:{ A:"Aumentar el tamaño de las tablas de enrutamiento",B:"Permitir bloques de tamaño variable",C:"Mejorar la escalabilidad",D:"Facilitar la agregación de rutas" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 4", texto:"¿Qué resumen cubre 192.168.40.0–192.168.43.0 (/24)?", opciones:{ A:"192.168.40.0/22",B:"192.168.40.0/23",C:"192.168.40.0/24",D:"192.168.41.0/22" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 4", texto:"¿Máscara ideal para enlaces punto a punto?", opciones:{ A:"/31",B:"/28",C:"/30",D:"/29" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 4", texto:"En IPv4, el campo “Options”…", opciones:{ A:"Es obligatorio y siempre mide 40 bytes",B:"Contiene las direcciones MAC",C:"Es opcional y permite funciones adicionales como registro de ruta o marcas de tiempo",D:"Solo existe en IPv6" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 4", texto:"Paquete 4000 bytes, MTU 1000: ¿fragmentos?", opciones:{ A:"3",B:"5",C:"6",D:"4" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 4", texto:"En IPv4, ¿qué formato textual se usa habitualmente para las direcciones?", opciones:{ A:"Notación decimal con cuatro octetos separados por puntos",B:"Notación textual basada en nombres simbólicos",C:"Notación binaria de 32 dígitos sin separadores",D:"Notación hexadecimal con dos octetos separados por guiones" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 4", texto:"¿Cuál es la función principal del nivel de red?", opciones:{ A:"Detectar errores de trama",B:"Encaminar paquetes entre redes origen y destino",C:"Establecer sesiones entre procesos",D:"Proporcionar un canal físico fiable" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 4", texto:"¿Cuál es el broadcast de 172.16.18.0/23?", opciones:{ A:"172.16.19.255",B:"172.16.18.255",C:"172.16.17.255",D:"172.16.20.255" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 4", texto:"Si DF=1 y el paquete supera la MTU:", opciones:{ A:"Se fragmenta",B:"Se descarta y se envía ICMP",C:"Se ignora DF",D:"Se divide en 2 partes" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 4", texto:"La siguiente subred tras 192.168.1.0/26 será:", opciones:{ A:"192.168.1.96/26",B:"192.168.1.64/26",C:"192.168.1.32/26",D:"192.168.1.128/26" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 4", texto:"El campo “Type of Service” (ToS) de IPv4 se diseñó originalmente para…", opciones:{ A:"Indicar la dirección de loopback",B:"Indicar preferencias de retardo, rendimiento y fiabilidad",C:"Indicar el número de fragmentos",D:"Indicar solo el protocolo de nivel superior" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 4", texto:"Una red de 8192 direcciones tiene máscara:", opciones:{ A:"/22",B:"/19",C:"/20",D:"/21" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 4", texto:"¿En qué RFC se definió originalmente IPv4?", opciones:{ A:"RFC 2460",B:"RFC 791",C:"RFC 2131",D:"RFC 826" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 4", texto:"En direccionamiento con clases, la máscara por defecto de Clase A es…", opciones:{ A:"255.255.255.252",B:"255.255.255.0",C:"255.0.0.0",D:"255.255.0.0" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 4", texto:"MTU=1400, datos máximos sin fragmentación:", opciones:{ A:"1400",B:"1392",C:"1380",D:"1360" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 4", texto:"¿Qué rango pertenece a direcciones privadas de Clase C?", opciones:{ A:"10.0.0.0 – 10.255.255.255",B:"192.168.0.0 – 192.168.255.255",C:"172.16.0.0 – 172.31.255.255",D:"224.0.0.0 – 239.255.255.255" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 4", texto:"El protocolo DHCP se utiliza para…", opciones:{ A:"Resolver IP a MAC en una LAN",B:"Encaminar datagramas entre routers",C:"Cifrar el tráfico IP extremo a extremo",D:"Asignar dinámicamente direcciones IP y parámetros de configuración a los hosts" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 4", texto:"Una diferencia clave entre IPv4 e IPv6 en cuanto a direccionamiento es que IPv6…", opciones:{ A:"No necesita máscaras",B:"No admite multicast",C:"Usa direcciones de 128 bits frente a los 32 bits de IPv4",D:"No permite subredes" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 4", texto:"En IPv4, ¿qué indica que una dirección es la de “puerta de enlace” de una subred?", opciones:{ A:"Es una dirección de host de la subred, elegida por diseño para enrutar tráfico hacia otras redes",B:"Tiene todos los bits de host a 1",C:"Es siempre la última dirección del rango",D:"Es siempre la primera dirección del rango" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 4", texto:"Resumen para 192.168.64.0/24–192.168.127.0/24:", opciones:{ A:"/18",B:"/16",C:"/17",D:"/19" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 4", texto:"En direccionamiento con clases, ¿qué rango pertenece a la Clase A?", opciones:{ A:"224.0.0.0 a 239.255.255.255",B:"0.0.0.0 a 127.255.255.255",C:"128.0.0.0 a 191.255.255.255",D:"192.0.0.0 a 223.255.255.255" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 4", texto:"El Proxy ARP consiste en que…", opciones:{ A:"Un host se autoasigna una IP",B:"Un switch aprende direcciones MAC",C:"Un router responde a solicitudes ARP en nombre de otro host, usando su propia MAC",D:"Un servidor DHCP responde a ARP Requests" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 4", texto:"Resumen para 192.168.0.0–192.168.7.0 (/24):", opciones:{ A:"192.168.0.0/19",B:"192.168.0.0/24",C:"192.168.0.0/20",D:"192.168.0.0/22" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 4", texto:"La función de un “DHCP relay” es…", opciones:{ A:"Dividir redes en subredes",B:"Reenviar mensajes DHCP entre clientes y un servidor ubicado en otra red",C:"Calcular checksums IPv4",D:"Asignar direcciones MAC a los hosts" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 4", texto:"El campo IHL de IPv4 indica…", opciones:{ A:"El tamaño de la carga útil",B:"El número de saltos máximos",C:"La longitud de la cabecera en palabras de 32 bits",D:"La longitud total del datagrama en bytes" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 4", texto:"Una “reserva” DHCP asocia…", opciones:{ A:"Un gateway a una VLAN",B:"Una dirección IP fija a una MAC concreta",C:"Un nombre de host a un DNS",D:"Una máscara a un router" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 4", texto:"En la práctica, RARP ha sido sustituido principalmente por…", opciones:{ A:"DHCP",B:"ICMP",C:"ARP estático",D:"BGP" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 4", texto:"Desde 10.0.0.0/16, subred adecuada para 400 hosts:", opciones:{ A:"/22",B:"/23",C:"/24",D:"/21" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 4", texto:"En una red /26, el número máximo de direcciones de host utilizables es…", opciones:{ A:"32",B:"30",C:"64",D:"62" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 4", texto:"RARP (Reverse ARP) se diseñó para…", opciones:{ A:"Resolver nombres de dominio a IP",B:"Obtener una dirección IP a partir de una MAC cuando el host no la conoce",C:"Asignar direcciones IPv6",D:"Obtener la MAC a partir de una IP" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 4", texto:"El campo “Total Length” de IPv4 contiene…", opciones:{ A:"El tamaño del campo de opciones",B:"El tamaño máximo de la MTU",C:"Solo el tamaño de la cabecera en bytes",D:"El tamaño total del datagrama (cabecera + datos) en bytes" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 4", texto:"¿Quién reensambla los fragmentos?", opciones:{ A:"Router ISP",B:"Todos los routers",C:"Primer router",D:"Host destino" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 4", texto:"Un riesgo de seguridad de DHCP es…", opciones:{ A:"Que se bloqueen los puertos de los switches",B:"Que aumente la latencia de la capa física",C:"Que clientes no autorizados obtengan configuración y acceso a la red",D:"Que se destruyan físicamente los routers" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 4", texto:"En una red 192.168.1.0/27, el número de hosts utilizables es…", opciones:{ A:"32",B:"30",C:"14",D:"62" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 4", texto:"Una entrada ARP estática se caracteriza por…", opciones:{ A:"Ser aprendida dinámicamente y expirar rápido",B:"Alterar la máscara de subred",C:"Aplicar solo a multicast",D:"Ser configurada manualmente y no expirar automáticamente" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 4", texto:"El rango 169.254.0.0/16 se utiliza para…", opciones:{ A:"Direcciones APIPA (autoasignación cuando no hay DHCP)",B:"Direcciones privadas de empresa",C:"Direcciones experimentales",D:"Multicast local" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 4", texto:"¿Cuándo NO hay fragmentación?", opciones:{ A:"MTU variable",B:"Paquete menor que MTU",C:"DF=0",D:"Paquete mayor que MTU" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 4", texto:"Para resumir 10.8.0.0/23 y 10.10.0.0/23 necesitas:", opciones:{ A:"Da igual",B:"Que sean contiguas y del mismo tamaño",C:"Que tengan distinta máscara",D:"Ser privadas" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 4", texto:"El orden correcto de los mensajes DHCP en el proceso básico es…", opciones:{ A:"Request, Discover, Offer, Acknowledge",B:"Discover, Offer, Request, Acknowledge",C:"Discover, Request, Acknowledge, Offer",D:"Offer, Discover, Request, Acknowledge" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 4", texto:"La IP 192.168.10.145/27 pertenece a qué subred?", opciones:{ A:"192.168.10.128/27",B:"192.168.10.144/27",C:"192.168.10.160/27",D:"192.168.10.96/27" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 4", texto:"IP se considera un protocolo…", opciones:{ A:"Con conexión y fiable",B:"Sin conexión y no fiable",C:"Con conexión y no fiable",D:"Sin conexión y fiable" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 4", texto:"¿Qué rango pertenece a direcciones privadas de Clase B?", opciones:{ A:"192.168.0.0 – 192.168.255.255",B:"10.0.0.0 – 10.255.255.255",C:"127.0.0.0 – 127.255.255.255",D:"172.16.0.0 – 172.31.255.255" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 4", texto:"¿Cuál NO puede resumirse con 192.168.56.0/24?", opciones:{ A:"192.168.56.0/24",B:"192.168.57.0/24",C:"192.168.58.0/24",D:"192.168.60.0/24" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 4", texto:"Un beneficio de DHCP en redes grandes es…", opciones:{ A:"Garantizar que nunca se saturará la red",B:"Reducir el trabajo manual de configuración y reutilizar direcciones",C:"Eliminar la necesidad de máscaras de subred",D:"Hacer innecesarios los routers" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 4", texto:"En la notación CIDR 192.168.10.0/26, ¿qué indica “/26”?", opciones:{ A:"El número de bits de la parte de host",B:"El número de subredes posibles",C:"El número de bits que forman la parte de red",D:"El número de hosts disponibles" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 4", texto:"En una subred /24, el número máximo de hosts utilizables es…", opciones:{ A:"256",B:"62",C:"254",D:"128" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 4", texto:"Subred para exactamente 2 hosts utilizables:", opciones:{ A:"/31",B:"/30",C:"/28",D:"/29" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 4", texto:"Si DF=1 y el paquete supera la MTU:", opciones:{ A:"Se fragmenta",B:"Se divide en 2 partes",C:"Se descarta y se envía ICMP",D:"Se ignora DF" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 4", texto:"¿Qué parte de una dirección IPv4 identifica la red?", opciones:{ A:"Los bits enmascarados con 1 en la máscara de subred",B:"Siempre el primer octeto",C:"Siempre los dos primeros octetos",D:"Los bits enmascarados con 0 en la máscara de subred" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 4", texto:"La longitud mínima de la cabecera IPv4 es de…", opciones:{ A:"60 bytes",B:"8 bytes",C:"20 bytes",D:"24 bytes" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 4", texto:"El nivel de red puede ayudar al control de congestión…", opciones:{ A:"Cambiando la codificación física de la señal",B:"Añadiendo redundancia a nivel de bit",C:"Modificando la potencia de transmisión de las antenas",D:"Ajustando rutas y gestionando colas en routers" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 4", texto:"MTU=1500, paquete total=4500 bytes. ¿Fragmentos?", opciones:{ A:"4",B:"3",C:"5",D:"2" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 4", texto:"MTU=1500, paquete total=4500 bytes. ¿Fragmentos?", opciones:{ A:"3",B:"2",C:"5",D:"4" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 4", texto:"¿Cuál de estas afirmaciones describe mejor la relación entre ARP y el nivel de red?", opciones:{ A:"ARP funciona exclusivamente en redes WAN",B:"ARP sustituye a IP en redes grandes",C:"ARP soporta a IP resolviendo direcciones lógicas a físicas en LAN",D:"ARP solo se usa en IPv6" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 4", texto:"¿Cuántas direcciones totales tiene una red /21?", opciones:{ A:"256",B:"1024",C:"512",D:"2048" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 4", texto:"En 10.10.0.0/20, tras usar /24 y /26, la próxima subred /26 libre comienza en:", opciones:{ A:"10.10.0.128",B:"10.10.0.64",C:"10.10.1.0",D:"10.10.0.192" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 4", texto:"En una subred 192.168.10.0/24, la dirección de broadcast es…", opciones:{ A:"192.168.10.0",B:"192.168.10.254",C:"192.168.10.255",D:"192.168.10.1" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 4", texto:"En 172.20.5.0/24, ¿cuál es el host máximo?", opciones:{ A:"172.20.5.254",B:"172.20.5.127",C:"172.20.5.253",D:"172.20.5.255" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 4", texto:"El campo “Protocol” de IPv4 sirve para…", opciones:{ A:"Indicar el tipo de enlace físico",B:"Indicar la prioridad del paquete",C:"Indicar el protocolo de nivel superior encapsulado (TCP, UDP, ICMP…)",D:"Indicar el número de saltos restantes" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 4", texto:"¿Qué tipo de mensaje envía un host cuando necesita resolver una IP a MAC?", opciones:{ A:"DHCP Discover",B:"ARP Reply en unicast",C:"ICMP Echo Reply",D:"ARP Request en broadcast" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 4", texto:"Resumen para 10.10.16.0/24 y 10.10.17.0/24:", opciones:{ A:"10.10.16.0/23",B:"10.10.16.0/22",C:"10.10.17.0/23",D:"10.10.0.0/16" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 4", texto:"La IP 10.99.17.200/18 pertenece a la red:", opciones:{ A:"10.99.128.0/18",B:"10.99.0.0/18",C:"10.99.64.0/18",D:"10.99.32.0/18" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 4", texto:"Las direcciones de Clase E se reservan para…", opciones:{ A:"Servicios DHCP",B:"Propósitos experimentales e investigación",C:"Redes domésticas",D:"Redes de campus" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 4", texto:"Un host con IP 192.168.10.37 y máscara 255.255.255.0 pertenece a la red…", opciones:{ A:"192.168.10.32/27",B:"192.168.10.0/24",C:"192.168.0.0/16",D:"192.168.10.64/26" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 4", texto:"Una empresa quiere 14 hosts por subred. ¿Qué máscara mínima pueden usar?", opciones:{ A:"/28",B:"/27",C:"/30",D:"/29" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 4", texto:"El “Header Checksum” en IPv4 se calcula sobre…", opciones:{ A:"Solo la cabecera IPv4",B:"Solo la carga útil",C:"La cabecera y la carga útil",D:"La tabla de rutas del router" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 4", texto:"Offset=370, bytes anteriores?", opciones:{ A:"1480",B:"296",C:"3700",D:"2960" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 4", texto:"¿Qué máscara NO sirve para 500 hosts?", opciones:{ A:"/24",B:"/21",C:"/23",D:"/22" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 4", texto:"En una red de campus, ¿qué combinación representa mejor un uso conjunto de CIDR y VLSM?", opciones:{ A:"El proveedor asigna direcciones sin máscara y la organización usa solo Clase C",B:"La organización utiliza RARP para repartir direcciones",C:"El proveedor anuncia un prefijo agregado hacia Internet y la organización subdivide internamente ese bloque en subredes de tamaños distintos",D:"El proveedor usa ARP para enrutar tráfico" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 4", texto:"Una técnica de control de congestión a nivel de red puede ser…", opciones:{ A:"Aumentar ilimitadamente el tamaño de los buffers",B:"Deshabilitar las tablas de encaminamiento",C:"Enviar todas las tramas en broadcast",D:"Ajustar rutas para evitar enlaces saturados" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 4", texto:"¿En qué RFC se define DHCPv4?", opciones:{ A:"RFC 826",B:"RFC 791",C:"RFC 903",D:"RFC 2131" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 4", texto:"La principal motivación de CIDR fue…", opciones:{ A:"Hacer las direcciones IPv4 de 64 bits",B:"Optimizar el uso del espacio de direcciones y reducir el tamaño de las tablas de enrutamiento",C:"Permitir más clases rígidas de direcciones",D:"Eliminar el uso de máscaras de subred" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 4", texto:"Una dirección IPv4 se considera privada cuando…", opciones:{ A:"Pertenece a un rango RFC 1918 destinado a redes internas",B:"Tiene máscara /32",C:"Se usa solo para multicast",D:"Siempre es de Clase D o E" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 4", texto:"¿Qué diferencia principal hay entre VLSM y CIDR en cuanto a ámbito de uso?", opciones:{ A:"Ambos se usan solo en enlaces punto a punto",B:"VLSM solo sirve para IPv6",C:"VLSM se utiliza típicamente dentro de una organización; CIDR se usa para asignación global y anuncios entre dominios",D:"CIDR solo sirve para direccionamiento privado" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 4", texto:"El dispositivo que entrega direcciones IP en DHCP se denomina…", opciones:{ A:"Servidor DHCP",B:"Router NAT",C:"Cliente DHCP",D:"Relay ARP" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 4", texto:"Un ejemplo de protocolo de apoyo al diagnóstico de errores en nivel de red es…", opciones:{ A:"ARP",B:"RARP",C:"DHCP",D:"ICMP" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 4", texto:"MF=1 y Offset=0 significa:", opciones:{ A:"Último fragmento",B:"Primer fragmento",C:"Intermedio",D:"Incorrecto" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 4", texto:"La IP 192.168.200.199/19 está en qué red?", opciones:{ A:"192.168.160.0",B:"192.168.224.0",C:"192.168.192.0",D:"192.168.128.0" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 4", texto:"Una dirección IPv4 se considera pública cuando…", opciones:{ A:"Siempre pertenece a la Clase A",B:"Siempre comienza por 192.168",C:"Es enrutable globalmente en Internet y no pertenece a rangos reservados",D:"Siempre pertenece a la Clase D" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 4", texto:"Una consecuencia de una congestión severa en nivel de red es…", opciones:{ A:"Pérdida de paquetes y aumento de retardos",B:"Aumento de la velocidad física del enlace",C:"Desaparición de las colas en los routers",D:"Reducción automática del tamaño de IP" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 4", texto:"En el datagrama IPv4, ¿qué campo indica la versión del protocolo?", opciones:{ A:"Protocol",B:"IHL",C:"Version",D:"Type of Service" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 4", texto:"Resumen para 172.20.0.0/20 – 172.20.15.0/20:", opciones:{ A:"172.20.0.0/18",B:"No pueden resumirse",C:"172.20.0.0/16",D:"172.20.0.0/20" }, correcta:"A", explicacion:"" },
+
+
+{ tema:"Tema 5", texto:"La integridad en TLS se garantiza mediante…", opciones:{ A:"RIP",B:"SSH sin cifrar",C:"SNMP",D:"MAC/GCM" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 5", texto:"IPsec pertenece a la capa…", opciones:{ A:"Aplicación",B:"Enlace exclusivamente",C:"De red",D:"Física" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 5", texto:"La seguridad en redes tiene como objetivo principal…", opciones:{ A:"Sustituir firewalls por cifrado",B:"Incrementar la velocidad de la red",C:"Garantizar confidencialidad, integridad y disponibilidad",D:"Eliminar completamente el malware" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 5", texto:"El intercambio de claves seguro lo gestiona…", opciones:{ A:"DNSSEC",B:"IKE",C:"ACL",D:"MD5" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 5", texto:"La autenticación del servidor en HTTPS usa…", opciones:{ A:"Certificados digitales",B:"ARP Reply",C:"FILTRO L3",D:"DHCPv6" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 5", texto:"Una firma digital ayuda a garantizar…", opciones:{ A:"Integridad",B:"Disponibilidad",C:"Mitigación DDoS",D:"Phishing" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 5", texto:"Un firewall es…", opciones:{ A:"Un sistema de backup",B:"Un antivirus",C:"Un algoritmo de hash",D:"Un filtro que controla tráfico entrante y saliente" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 5", texto:"Un IDS…", opciones:{ A:"Asigna VLANs",B:"Bloquea automáticamente todo tráfico",C:"Reemplaza el firewall",D:"Detecta tráfico sospechoso pero no bloquea" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 5", texto:"Una VPN contribuye a…", opciones:{ A:"Desactivar firewalls",B:"Confidencialidad",C:"Integridad únicamente",D:"Mejorar velocidad siempre" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 5", texto:"La tríada CIA incluye…", opciones:{ A:"Cliente, Internet y Aplicaciones",B:"Confidencialidad, Integridad y Disponibilidad",C:"Cifrado, IPSec y Auditoría",D:"Control, Inyección y Autenticación" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 5", texto:"La verificación de firma usa…", opciones:{ A:"La clave privada del servidor",B:"La clave pública del remitente",C:"Contraseñas en texto claro",D:"Reglas de firewall" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 5", texto:"La saturación con tráfico falso corresponde a…", opciones:{ A:"Un ataque de denegación de servicio",B:"Un ataque basado en firmas",C:"Un IDS pasivo",D:"Un certificado X.509" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 5", texto:"Un IPS…", opciones:{ A:"Es un antivirus",B:"Actúa solo como monitor",C:"Es un router",D:"Detecta y bloquea amenazas" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 5", texto:"Modo túnel se usa típicamente en…", opciones:{ A:"VPN Gateway-Gateway",B:"Host-Host dentro de la misma LAN",C:"Filtrado de puertos",D:"ARP broadcast" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 5", texto:"Una red sin cifrado facilita…", opciones:{ A:"Segmentación avanzada",B:"NAT estático",C:"Routing dinámico",D:"Sniffing" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 5", texto:"En seguridad por capas, WPA3 protege…", opciones:{ A:"Capa de enlace inalámbrica",B:"Capa DNS",C:"Capa de transporte",D:"Capa física exclusivamente" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 5", texto:"IPsec mitiga…", opciones:{ A:"Problemas de cableado",B:"SQL injection",C:"DHCP starvation",D:"IP spoofing y sniffing" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 5", texto:"Un principio de defensa en profundidad es…", opciones:{ A:"Combinar medidas preventivas, detectivas y correctivas",B:"Eliminar redundancia",C:"Reducir logs",D:"Mantener una sola medida activa" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 5", texto:"En IAM, la autenticación centralizada usa…", opciones:{ A:"ARP",B:"Active Directory o LDAP",C:"ICMP",D:"DHCP" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 5", texto:"NAC permite…", opciones:{ A:"Acceso solo a dispositivos verificados",B:"Eliminar TLS",C:"Asignar direcciones públicas automáticamente",D:"Crear certificados raíz" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 5", texto:"Una motivación de la seguridad es…", opciones:{ A:"Permitir acceso sin restricciones",B:"Eliminar el uso de sistemas de autenticación",C:"Proteger la privacidad y evitar pérdidas económicas",D:"Aumentar el tamaño de las redes" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 5", texto:"Un firewall stateful…", opciones:{ A:"Elimina el cifrado",B:"Mantiene tabla de conexiones",C:"Filtra solo por MAC",D:"Es siempre un proxy L7" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 5", texto:"La confidencialidad en IPsec la aporta…", opciones:{ A:"ESP",B:"SMTP",C:"AH",D:"ARP" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 5", texto:"ESP proporciona…", opciones:{ A:"Filtrado DNS",B:"Control de ancho de banda",C:"Cifrado e integridad",D:"Redundancia física" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 5", texto:"Los backups permiten…", opciones:{ A:"Eliminar ataques",B:"Evitar sniffing",C:"Desactivar TLS",D:"Recuperar datos tras incidentes como ransomware" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 5", texto:"El handshake TLS implica…", opciones:{ A:"Asignación DHCP",B:"Fragmentación IP",C:"Apertura de puertos en firewall",D:"Autenticación mediante certificados" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 5", texto:"IAM garantiza que…", opciones:{ A:"No se necesiten firewalls",B:"No existan incidentes",C:"Los datos viajen siempre sin cifrar",D:"Las personas correctas accedan a recursos adecuados" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 5", texto:"El GDPR aplica a…", opciones:{ A:"Optimización del tráfico TCP",B:"Protección de datos personales de ciudadanos europeos",C:"Gestión de VLANs",D:"Control de ancho de banda en routers" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 5", texto:"La criptografía convierte texto plano en…", opciones:{ A:"Texto cifrado",B:"Código MAC",C:"Registros de auditoría",D:"Reglas de firewall" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 5", texto:"Una mitigación es…", opciones:{ A:"Desactivar copias de seguridad",B:"Eliminar logs",C:"Reducir controles",D:"Aplicar parches regulares" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 5", texto:"Un hash permite verificar…", opciones:{ A:"Confidencialidad",B:"Integridad",C:"Disponibilidad",D:"Redundancia" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 5", texto:"Los algoritmos seguros en TLS 1.3 incluyen…", opciones:{ A:"Md5 puro",B:"AES-GCM y ChaCha20",C:"ARP cifrado",D:"3DES por defecto" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 5", texto:"S/MIME se basa en…", opciones:{ A:"Certificados X.509",B:"Protocolos de enrutamiento",C:"Cables de fibra óptica",D:"Topologías WAN" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 5", texto:"Un ataque DoS se realiza desde…", opciones:{ A:"Redes físicas dedicadas",B:"Un único origen",C:"Servidores DNSSEC",D:"Múltiples botnets siempre" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 5", texto:"El ransomware…", opciones:{ A:"Cifra datos y exige un rescate",B:"Se limita a registrar actividad del usuario",C:"Es un mecanismo de autenticación",D:"Es un protocolo de cifrado" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 5", texto:"Malware es…", opciones:{ A:"Sistema de certificados",B:"Herramienta legítima de administración",C:"Software malicioso que busca dañar o robar información",D:"Protocolo de red seguro" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 5", texto:"Un virus se caracteriza por…", opciones:{ A:"Impedir la ejecución de antivirus por diseño",B:"Infectar solo redes inalámbricas",C:"Enviar spam masivo automáticamente",D:"Adjuntarse a programas legítimos y propagarse al ejecutarlos" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 5", texto:"Modo transporte se usa en…", opciones:{ A:"DMZ",B:"802.1X",C:"Gateway-Gateway",D:"Host-Host" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 5", texto:"ESP puede usarse para…", opciones:{ A:"Verificar roles IAM",B:"Firmar digitalmente correos",C:"Gestionar VLANs",D:"Cifrar datos en tránsito" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 5", texto:"Un ClientHello incluye…", opciones:{ A:"Lista de versiones y algoritmos soportados",B:"La tabla de rutas",C:"La clave privada del cliente",D:"La dirección MAC del servidor" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 5", texto:"El principio de mínimo privilegio indica que…", opciones:{ A:"Deben tener acceso total siempre",B:"Se eliminan roles",C:"Se desactiva el control de acceso",D:"Usuarios tienen solo permisos necesarios" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 5", texto:"Una propiedad del handshake es…", opciones:{ A:"Eliminar claves públicas",B:"Crear una DMZ automáticamente",C:"Asignar direcciones IP privadas",D:"Establecer algoritmos de cifrado" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 5", texto:"En modo túnel se protege…", opciones:{ A:"Solo encabezados TCP",B:"El paquete IP completo",C:"Solo capa de aplicación",D:"La MAC origen" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 5", texto:"Si un dispositivo no cumple políticas NAC…", opciones:{ A:"Se elimina la cuenta de usuario",B:"Se activa un backup",C:"Se envía a red restringida o cuarentena",D:"Se le asigna rol de administrador" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 5", texto:"En gestión de incidentes, la erradicación es…", opciones:{ A:"Deshabilitar backups",B:"Incrementar ancho de banda",C:"Eliminar cortafuegos",D:"Eliminar causas raíz como malware" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 5", texto:"Si el hash recibido coincide con el calculado…", opciones:{ A:"El certificado es inválido",B:"El IDS está apagado",C:"El mensaje es íntegro",D:"El servidor está caído" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 5", texto:"IDPS basado en comportamiento…", opciones:{ A:"No detecta nada nuevo",B:"Protege solo DNSSEC",C:"Requiere siempre firmas previas",D:"Detecta anomalías no conocidas" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 5", texto:"El sniffing implica…", opciones:{ A:"Capturar datos en tránsito",B:"Redirigir sesiones TLS",C:"Modificar datos cifrados",D:"Crear certificados fraudulentos" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 5", texto:"Separar LAN/DMZ/WAN es…", opciones:{ A:"Segmentación de red",B:"Autenticación mutua",C:"IPsec",D:"Hashing" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 5", texto:"En seguridad por capas, HTTPS protege…", opciones:{ A:"Capa de red exclusivamente",B:"Capa física",C:"NAT",D:"Capa de aplicación" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 5", texto:"La integridad garantiza que…", opciones:{ A:"Que no existan errores físicos en cables",B:"Los usuarios puedan acceder desde cualquier país",C:"Los datos no se alteren sin autorización",D:"Los datos estén siempre cifrados" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 5", texto:"La autenticidad garantiza…", opciones:{ A:"Que se use TLS 1.3",B:"Que el mensaje esté disponible 24/7",C:"Verificar la identidad del remitente",D:"Que exista redundancia" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 5", texto:"Una consecuencia del aumento de ciberataques es…", opciones:{ A:"El uso obligatorio de redes privadas físicas",B:"Mayor necesidad de medidas de protección",C:"La desaparición de VPNs",D:"El fin del cifrado simétrico" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 5", texto:"La DMZ aloja…", opciones:{ A:"Equipos físicos de seguridad",B:"Protocolos RIP",C:"Usuarios internos",D:"Servidores públicos" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 5", texto:"La disponibilidad asegura que…", opciones:{ A:"Los datos siempre estén cifrados",B:"Las contraseñas se renueven automáticamente",C:"Los ataques desaparezcan por completo",D:"Los servicios estén accesibles para usuarios autorizados" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 5", texto:"Un componente de una política es…", opciones:{ A:"Color del fondo de escritorio",B:"Procedimientos de acceso",C:"Marca del router",D:"Modelo del procesador" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 5", texto:"El cifrado protege…", opciones:{ A:"DNSSEC exclusivamente",B:"DoS",C:"Confidencialidad",D:"Segmentación" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 5", texto:"Los gusanos se propagan…", opciones:{ A:"De forma autónoma sin usuario",B:"Exclusivamente por USB",C:"Mediante archivos infectados únicamente",D:"Solo en capa física" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 5", texto:"La autenticación mutua en TLS significa…", opciones:{ A:"Cliente y servidor se validan",B:"Se usa ARP seguro",C:"Solo el servidor se cifra",D:"No existe certificado" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 5", texto:"La segmentación de red evita que…", opciones:{ A:"Funcionen los firewalls",B:"Exista cifrado TLS",C:"Los usuarios naveguen",D:"Un ataque en una zona afecte a otras" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 5", texto:"Las claves efímeras ECDHE proporcionan…", opciones:{ A:"Cifrado obsoleto",B:"Redundancia física",C:"Perfect Forward Secrecy",D:"Hashing más rápido" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 5", texto:"En seguridad por capas, IPsec protege…", opciones:{ A:"Capa física",B:"Capa aplicación",C:"Capa de red",D:"VLANs" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 5", texto:"En gestión de incidentes, la contención implica…", opciones:{ A:"Incrementar privilegios a invitados",B:"Enviar datos sin cifrar",C:"Negar el incidente",D:"Aislar el incidente para evitar propagación" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 5", texto:"IDPS basado en firmas…", opciones:{ A:"Se usa solo en capa física",B:"Analiza comportamiento exclusivamente",C:"Detecta ataques conocidos comparando patrones",D:"Detecta todos los ataques desconocidos" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 5", texto:"Un proxy L7 analiza…", opciones:{ A:"Encapsulado MPLS",B:"La fibra óptica",C:"El tamaño del cable",D:"El contenido de la aplicación" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 5", texto:"TLS 1.3 elimina…", opciones:{ A:"La autenticación del servidor",B:"SSL y versiones TLS < 1.2",C:"El handshake",D:"Todos los mecanismos de integridad" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 5", texto:"La redundancia de servidores mejora…", opciones:{ A:"Gestión de usuarios",B:"Integridad",C:"Hashing",D:"Disponibilidad" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 5", texto:"El phishing busca…", opciones:{ A:"Optimizar el tráfico DNS",B:"Engañar para obtener datos confidenciales",C:"Instalar certificados raíz",D:"Actualizar parches automáticamente" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 5", texto:"Un uso típico de criptografía es…", opciones:{ A:"Seleccionar rutas OSPF",B:"Proteger sesiones web como HTTPS",C:"Crear VLANs",D:"Asignar direcciones públicas" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 5", texto:"La criptografía protege comunicaciones en…", opciones:{ A:"FTP sin cifrar",B:"Redes radio FM",C:"VPN e IPsec",D:"DHCP y ARP" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 5", texto:"Un balanceador de carga favorece…", opciones:{ A:"Phishing",B:"Integridad",C:"Sniffing",D:"Disponibilidad" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 5", texto:"IPsec protege…", opciones:{ A:"Tráfico IP mediante cifrado y autenticación",B:"Switches L2",C:"Páginas web estáticas",D:"Redes Wi-Fi exclusivamente" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 5", texto:"TLS protege…", opciones:{ A:"Segmentación por VLAN",B:"Confidencialidad e integridad",C:"Velocidad de CPU",D:"Actualización de parches" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 5", texto:"Un correo fraudulento imitador de un banco es…", opciones:{ A:"IP spoofing",B:"Phishing",C:"Sniffing",D:"DMZ mirroring" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 5", texto:"La confidencialidad busca…", opciones:{ A:"Que los datos no se pierdan",B:"Que el sistema esté siempre disponible",C:"Que los archivos sean comprimidos",D:"Que solo usuarios autorizados accedan a los datos" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 5", texto:"Un ejemplo de dependencia tecnológica es…", opciones:{ A:"El uso de cables de mayor longitud",B:"La incapacidad de usar redes inalámbricas",C:"Transacciones bancarias que dependen de redes",D:"La prohibición de cifrado" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 5", texto:"AH proporciona…", opciones:{ A:"Cifrado de payload",B:"Asignación NAT",C:"Autenticación e integridad",D:"Segmentación L2" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 5", texto:"Un ejemplo de defensa en profundidad es…", opciones:{ A:"MFA + cortafuegos + segmentación",B:"Eliminar cifrado",C:"Usar solo SAI",D:"Un solo router sin reglas" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 5", texto:"Una firma digital cifra…", opciones:{ A:"La sesión completa con AES",B:"El mensaje completo con clave pública",C:"El hash del mensaje con clave privada",D:"El paquete IP entero" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 5", texto:"IKE sirve para…", opciones:{ A:"Asignar IP por DHCP",B:"Capturar tráfico",C:"Intercambio automático de claves",D:"Monitorizar CPU" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 5", texto:"Una política de seguridad define…", opciones:{ A:"La velocidad mínima de Internet",B:"Directrices y reglas para proteger activos",C:"Los formatos válidos de imágenes",D:"Qué switches pueden usarse" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 5", texto:"PGP se usa para…", opciones:{ A:"Cifrar correos electrónicos",B:"Emitir certificados raíz",C:"Crear reglas NAT",D:"Dividir VLANs" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 5", texto:"TLS opera entre…", opciones:{ A:"Física y enlace",B:"Transporte y aplicación",C:"Red y enlace",D:"Física y red" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 5", texto:"Un DDoS…", opciones:{ A:"Coordina múltiples dispositivos atacantes",B:"Es un ataque físico",C:"Impide siempre la navegación segura",D:"Requiere cifrado TLS" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 5", texto:"Un filtro L3/L4 se basa en…", opciones:{ A:"DNSSEC",B:"IP y puertos",C:"Contenido HTTP",D:"CA privada" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 5", texto:"Almacenar contraseñas con hashes salteados es…", opciones:{ A:"Una técnica de sniffing",B:"Un protocolo de enrutamiento",C:"Una tarea propia de DMZ",D:"Una aplicación de integridad y seguridad" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 5", texto:"En gestión de incidentes, la detección consiste en…", opciones:{ A:"Restaurar copias de seguridad",B:"Identificar que un incidente ha ocurrido",C:"Bloquear completamente Internet",D:"Eliminar usuarios legítimos" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 5", texto:"El no repudio garantiza que…", opciones:{ A:"La red esté segmentada",B:"El remitente no pueda negar haber enviado un mensaje",C:"Los datos estén comprimidos",D:"Los puertos queden cerrados" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 5", texto:"Una buena práctica de firewall es…", opciones:{ A:"Permitir todo y bloquear excepciones",B:"Desactivar reglas salientes",C:"“Deny by default”",D:"Eliminar logs" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 5", texto:"Tras el handshake, los datos se cifran con…", opciones:{ A:"Claves privadas del cliente",B:"Claves simétricas acordadas",C:"Reglas RBAC",D:"Certificados raíz" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 5", texto:"En modo transporte se protege…", opciones:{ A:"El paquete IP completo",B:"Solo el payload IP",C:"El DNS",D:"La capa 2" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 5", texto:"La interconexión global provoca…", opciones:{ A:"Mayor necesidad de redes físicas dedicadas",B:"Riesgos mayores de accesos no autorizados",C:"Reducción automática del malware",D:"Desaparición de ataques DoS" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 5", texto:"En TLS se negocian…", opciones:{ A:"Rutas estáticas",B:"Reglas de firewall",C:"Solo claves públicas",D:"Claves de sesión simétricas" }, correcta:"D", explicacion:"" },
+
+{ tema:"Tema 6", texto:"¿Qué técnica de entramado usa caracteres especiales al inicio y fin (ej. DLE, STX, ETX)?", opciones:{ A:"Inserción de caracteres de inicio y fin",B:"Cuenta de caracteres",C:"Violación de código",D:"Inserción de patrones de bits con 01111110" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 6", texto:"Según el tema, ¿por qué Ethernet fija un tamaño mínimo de trama (64 bytes)?", opciones:{ A:"Para permitir direcciones MAC de 64 bits",B:"Para evitar el bit stuffing",C:"Para garantizar que la colisión sea detectable durante la transmisión",D:"Para aumentar el throughput de IP" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 6", texto:"¿Qué tipo de protocolos MAC asigna ranuras periódicas (slots) a los dispositivos?", opciones:{ A:"Orientados a conexión como HDLC",B:"Por reserva (síncronos) como TDM/FDM/CDMA",C:"De aplicación como HTTP",D:"De contención (asíncronos) como CSMA" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 6", texto:"¿Qué subcapa proporciona la interfaz con los niveles superiores y puede encargarse de flujo/errores?", opciones:{ A:"LLC",B:"Física",C:"MAC",D:"Aplicación" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 6", texto:"¿Qué método usa complemento a uno y palabras de 16 bits?", opciones:{ A:"Checksum",B:"CRC",C:"Hamming",D:"Paridad múltiple" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 6", texto:"¿Qué es piggybacking (ACK implícito)?", opciones:{ A:"Sustituir CRC por checksum",B:"Eliminar numeración de tramas",C:"Insertar el ACK dentro de la siguiente trama de datos del receptor",D:"Enviar ACK en una trama separada siempre" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 6", texto:"¿Cuál de estos métodos se menciona como corrección de errores vista en el tema?", opciones:{ A:"Hamming",B:"Reed‑Solomon",C:"Hamming y paridad múltiple (se ven estos)",D:"Todos los anteriores sin excepción" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 6", texto:"¿Qué capacidad se atribuye al código Hamming en el tema?", opciones:{ A:"Corrige 1 bit y detecta 2",B:"Solo detecta errores simples",C:"Solo funciona con tramas Ethernet",D:"Corrige 2 bits y detecta 1" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 6", texto:"¿Cuál es la función principal del nivel de enlace de datos?", opciones:{ A:"Garantizar la entrega extremo a extremo entre procesos (transporte)",B:"Resolver nombres de dominio a direcciones IP (DNS)",C:"Proporcionar comunicación fiable y eficiente entre nodos físicamente conectados",D:"Determinar la mejor ruta extremo a extremo entre redes (enrutamiento)" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 6", texto:"¿Qué indica el bit menos significativo del primer octeto en una dirección MAC?", opciones:{ A:"Si es unicast (0) o multicast (1)",B:"Si es IPv4 o IPv6",C:"Si el enlace es full‑duplex",D:"Si usa CRC‑16 o CRC‑32" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 6", texto:"¿Qué subcapa se encarga principalmente del acceso al medio compartido?", opciones:{ A:"IP",B:"LLC",C:"MAC",D:"TCP" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 6", texto:"¿Qué ocurre en Ethernet full‑duplex respecto a CSMA/CD?", opciones:{ A:"Se reemplaza por Token Ring",B:"Se sustituye por RTS/CTS",C:"Se desactiva (no hay colisiones en enlaces punto a punto)",D:"Se activa más a menudo" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 6", texto:"¿Qué problema puede ocurrir si las tramas son muy cortas?", opciones:{ A:"Comunicación ineficiente por sobrecarga de cabeceras",B:"Se pierde el direccionamiento MAC",C:"Se imposibilita el cálculo de CRC",D:"Aumenta la probabilidad de colisión por CSMA/CA" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 6", texto:"¿Para qué sirve la autonegociación en Ethernet (a partir de 100 Mbps)?", opciones:{ A:"Para asignar direcciones IP por DHCP",B:"Para resolver MAC mediante ARP",C:"Para cifrar el enlace con AES",D:"Para acordar automáticamente velocidad, dúplex, modo y control de flujo usando FLP" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 6", texto:"¿Cuál es una desventaja clave de parada y espera?", opciones:{ A:"No funciona sobre enlaces punto a punto",B:"Requiere token y topología en anillo",C:"Es muy ineficiente en enlaces rápidos o con alta latencia (baja utilización)",D:"No detecta errores de bits" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 6", texto:"¿Qué método de detección añade un bit para hacer par/impar el número de '1'?", opciones:{ A:"Bit de paridad",B:"Checksum",C:"CRC",D:"Hamming" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 6", texto:"¿Por qué Wi‑Fi usa CSMA/CA y no CSMA/CD?", opciones:{ A:"Porque una estación no puede transmitir y escuchar a la vez para detectar colisiones",B:"Porque el medio inalámbrico no tiene errores",C:"Porque CSMA/CA elimina la necesidad de ACK",D:"Porque Wi‑Fi usa siempre full‑duplex" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 6", texto:"¿Qué protocolo ARQ es simple pero ineficiente y se basa en enviar una trama y esperar confirmación?", opciones:{ A:"Vuelta‑Atrás‑N",B:"Parada y espera",C:"Token Ring",D:"Rechazo selectivo" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 6", texto:"En la inserción de patrones de inicio/fin con bit stuffing, ¿qué se hace tras detectar cinco '1' consecutivos al transmitir?", opciones:{ A:"Se envía un ACK inmediato",B:"Se inserta un '1' a continuación",C:"Se inserta un '0' a continuación",D:"Se descarta la trama" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 6", texto:"En Hamming, ¿dónde se colocan los bits de paridad?", opciones:{ A:"En el último byte siempre",B:"Después de cada 5 unos consecutivos",C:"Antes del preámbulo",D:"En posiciones potencia de 2 (1,2,4,8,...)" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 6", texto:"¿Cuál de los siguientes es un servicio obligatorio del nivel de enlace de datos?", opciones:{ A:"Autenticación de usuarios",B:"Detección de errores",C:"Corrección de errores",D:"Control de flujo" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 6", texto:"¿Qué campo de la trama 802.11 ayuda a distinguir management/control/data?", opciones:{ A:"pause_time",B:"OUI",C:"SFD",D:"Frame Control" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 6", texto:"¿Qué característica define CSMA/CD en Ethernet half‑duplex?", opciones:{ A:"Detecta colisiones mientras transmite y usa jamming + backoff exponencial",B:"Evita colisiones usando turnos",C:"Requiere cifrado WPA2",D:"Solo funciona en Wi‑Fi" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 6", texto:"¿Qué patrón de delimitación se menciona para LLC en el tema?", opciones:{ A:"10101011",B:"01111110",C:"10101010",D:"11111111" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 6", texto:"¿Cuál es una ventaja del rechazo selectivo sobre Vuelta‑Atrás‑N?", opciones:{ A:"Mayor eficiencia al retransmitir solo lo necesario",B:"Menor lógica en los extremos",C:"Impide la pérdida de tramas físicamente",D:"Elimina la necesidad de numeración de tramas" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 6", texto:"En rechazo selectivo, ¿qué se retransmite al recibir una señal SNACK?", opciones:{ A:"Todas las tramas desde la errónea",B:"Ninguna, solo se registra el evento",C:"Únicamente los ACK perdidos",D:"Solo la trama errónea o perdida" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 6", texto:"¿Qué campo aparece en el formato general de una trama MAC para detectar errores?", opciones:{ A:"Puerto TCP",B:"IP destino",C:"CRC (FCS)",D:"Protocolo" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 6", texto:"¿Qué estándar define Wi‑Fi?", opciones:{ A:"IEEE 802.1Q",B:"IEEE 802.11",C:"IEEE 802.5",D:"IEEE 802.3" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 6", texto:"¿Cuál es el objetivo del control de errores (ARQ) en nivel de enlace?", opciones:{ A:"Asignar VLAN automáticamente",B:"Garantizar tramas correctas recuperando las perdidas o erróneas mediante retransmisión",C:"Reemplazar CRC por checksum",D:"Evitar que el medio se sature con beacons" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 6", texto:"En Gigabit Ethernet half‑duplex, ¿para qué se usa la extensión de portadora?", opciones:{ A:"Para introducir VLAN 802.1Q",B:"Para eliminar el FCS",C:"Para aumentar el tamaño mínimo efectivo de trama a 512 bytes",D:"Para habilitar WPA3" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 6", texto:"¿Qué aporta la ventana deslizante frente a parada y espera?", opciones:{ A:"Evita totalmente los errores de bits",B:"Elimina la necesidad de direcciones MAC",C:"Permite varias tramas en tránsito sin confirmar, aumentando eficiencia",D:"Convierte el enlace en full‑duplex automáticamente" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 6", texto:"En servicios orientados a la conexión del nivel de enlace, ¿qué fases aparecen típicamente?", opciones:{ A:"Establecimiento, transmisión y liberación de la conexión",B:"Descubrimiento de vecinos, SLAAC y DAD",C:"Resolución DNS, enrutamiento y fragmentación",D:"Autenticación, cifrado y compresión" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 6", texto:"En LLC, ¿qué permite identificar un protocolo de nivel superior dentro de una estación?", opciones:{ A:"OUI",B:"SFD",C:"LSAP (Service Access Point)",D:"BSSID" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 6", texto:"¿Qué servicio LLC es no orientado a conexión y no confirmado (Tipo I)?", opciones:{ A:"Datagrama simple sin control de flujo ni detección de errores en LLC",B:"Servicio exclusivo de Token Ring",C:"Datagrama confirmado sin conexión",D:"Conexión lógica con ventana deslizante" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 6", texto:"¿Cuál es el objetivo del entramado?", opciones:{ A:"Seleccionar el canal Wi‑Fi menos congestionado",B:"Asignar direcciones IP",C:"Calcular la ruta más corta en la red",D:"Delimitar el inicio y fin de una trama y estructurar la PDU de nivel 2" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 6", texto:"¿Qué mecanismo adicional de Wi‑Fi ayuda con nodos ocultos?", opciones:{ A:"EtherType",B:"PAUSE",C:"CRC‑32",D:"RTS/CTS" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 6", texto:"¿Cómo se llaman las PDU del nivel de enlace de datos?", opciones:{ A:"Segmentos",B:"Datagramas IP",C:"Paquetes",D:"Tramas" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 6", texto:"En la inserción de caracteres, ¿cómo se evita que un DLE dentro de los datos se interprete como control?", opciones:{ A:"Se recalcula el CRC con polinomio distinto",B:"Se elimina el byte DLE del payload",C:"Se cambia a codificación Manchester",D:"Se duplica el carácter DLE (se añade un segundo DLE)" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 6", texto:"¿Qué mecanismo de control de flujo introduce IEEE 802.3x en full‑duplex?", opciones:{ A:"Trama PAUSE con campo pause_time",B:"Bit stuffing",C:"SNACK selectivo",D:"ACK acumulativo" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 6", texto:"¿Qué es un dominio de colisión?", opciones:{ A:"Un conjunto de VLAN en un switch",B:"Una WLAN con el mismo SSID",C:"Una subred IP con el mismo gateway",D:"Una parte de red donde las estaciones comparten medio y pueden colisionar" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 6", texto:"En CRC, ¿qué se añade a la trama antes de dividir por el polinomio generador?", opciones:{ A:"Un ACK acumulativo",B:"Un número de ceros igual al grado del generador",C:"Un token",D:"Un campo IP adicional" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 6", texto:"¿Qué servicio LLC es orientado a la conexión (Tipo II)?", opciones:{ A:"No establece conexión y no confirma",B:"No establece conexión pero confirma datagramas",C:"Solo se usa con Wi‑Fi",D:"Establece conexión lógica y proporciona control de flujo y detección de errores" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 6", texto:"En parada y espera, ¿qué hace el emisor tras enviar una trama?", opciones:{ A:"Envía tramas sin límite mientras haya datos",B:"Envía un NACK para confirmar recepción",C:"Cambia el canal y retransmite inmediatamente",D:"Espera un ACK antes de enviar la siguiente" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 6", texto:"En CRC, ¿qué indica un resto distinto de 0 en el receptor?", opciones:{ A:"Trama válida",B:"Se debe comprimir el payload",C:"Se debe cambiar el canal",D:"Error detectado: la trama se descarta" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 6", texto:"¿Cuál de estos protocolos se menciona como orientado a conexión en nivel 2?", opciones:{ A:"HDLC",B:"DNS",C:"HTTP",D:"IP" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 6", texto:"¿Qué objetivo persigue el control de flujo en nivel de enlace?", opciones:{ A:"Elegir el mejor AP disponible",B:"Evitar ataques de spoofing",C:"Aumentar la potencia de transmisión",D:"Evitar que el emisor envíe más rápido de lo que el receptor puede procesar" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 6", texto:"¿Cuál es la dirección MAC de broadcast?", opciones:{ A:"00:00:00:00:00:00",B:"11:11:11:11:11:11",C:"FF:FF:FF:FF:FF:FF",D:"AA:BB:CC:DD:EE:FF" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 6", texto:"En CSMA, ¿qué hace una estación antes de transmitir?", opciones:{ A:"Transmite siempre sin escuchar",B:"Envía CTS para reservar el medio",C:"Escucha el medio y transmite si está libre; si está ocupado espera/backoff",D:"Solicita un token al switch" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 6", texto:"En Vuelta‑Atrás‑N, cuando se detecta un error en una trama, ¿qué ocurre?", opciones:{ A:"Se descarta esa trama y las siguientes; se retransmite desde la errónea",B:"Se cambia a full‑duplex",C:"Se ignora el error si llega un ACK posterior",D:"Se retransmite solo esa trama" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 6", texto:"¿Qué afirmación sobre direcciones MAC es correcta según el tema?", opciones:{ A:"Tienen 32 bits y se representan en decimal",B:"Tienen 48 bits; los primeros 24 son el OUI administrado por IEEE",C:"Tienen 128 bits y las asigna IANA",D:"Solo existen en Wi‑Fi" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 6", texto:"Según el tema, ¿por qué Ethernet usa CRC‑32?", opciones:{ A:"Porque reduce el tamaño mínimo de trama",B:"Porque corrige errores sin retransmisión",C:"Porque es rápido en hardware y tiene altísima probabilidad de detección",D:"Porque es lento pero exacto" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 6", texto:"En servicios NO orientados a la conexión del nivel de enlace, ¿qué ocurre con las tramas erróneas?", opciones:{ A:"Se entregan igualmente para que IP las repare",B:"Se reordenan antes de entregarlas",C:"Se descartan tras detectar el error",D:"Se corrigen automáticamente con códigos FEC" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 6", texto:"¿Qué protocolo MAC se describe como de contención y con eficiencias ~18% y ~36%?", opciones:{ A:"ALOHA (puro y ranurado)",B:"PPP",C:"Token Ring",D:"TDMA" }, correcta:"A", explicacion:"" },
+
+{ tema:"Tema 7", texto:"¿Qué genera el ruido térmico?", opciones:{ A:"Errores de sincronización",B:"El movimiento aleatorio de electrones en el material",C:"Colisiones de tramas",D:"Desajuste de conectores" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 7", texto:"¿Qué ventaja aporta la modulación en fase diferencial (DPSK)?", opciones:{ A:"No requiere sincronización",B:"Aumenta la potencia transmitida",C:"El receptor no necesita referencia absoluta de fase",D:"Evita el ruido" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 7", texto:"¿Qué ventaja tiene la multiplexación TDM síncrona?", opciones:{ A:"Elimina ISI",B:"Convierte señales analógicas a digitales",C:"Evita sincronización de reloj",D:"Asignación fija y predecible de intervalos de tiempo" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 7", texto:"¿Cuál es la característica principal de ASK?", opciones:{ A:"Modifica la amplitud de la portadora",B:"Modifica la frecuencia de la portadora",C:"No utiliza portadora",D:"Modifica la fase exclusivamente" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 7", texto:"¿Qué propiedad caracteriza la modulación digital frente a la analógica?", opciones:{ A:"Requiere menor sincronización",B:"No utiliza portadoras",C:"Evita necesidad de ancho de banda",D:"Representa la información con valores discretos" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 7", texto:"¿Qué tipo de transmisión caracteriza a RS-232?", opciones:{ A:"Señales eléctricas asíncronas punto a punto",B:"Modulación en cuadratura",C:"Transmisión síncrona con reloj compartido",D:"Multiplexación por frecuencia" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 7", texto:"¿Qué define la capa física en USB?", opciones:{ A:"El protocolo de configuración",B:"El direccionamiento de dispositivos",C:"La gestión de energía exclusivamente",D:"El método eléctrico y codificación para transmitir bits" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 7", texto:"¿Qué provoca la interferencia intersimbólica (ISI)?", opciones:{ A:"El ruido blanco",B:"La falta de modulación",C:"El solapamiento entre pulsos debido a dispersión o distorsión",D:"Una velocidad de reloj baja" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 7", texto:"¿Qué elemento condiciona la distancia máxima en cobre?", opciones:{ A:"La atenuación",B:"La encapsulación",C:"El CRC",D:"La duplexación" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 7", texto:"¿Qué ventaja tiene la fibra monomodo?", opciones:{ A:"Menor dispersión y mayor alcance",B:"No requiere láser",C:"Permite conectores más simples",D:"Mayor robustez mecánica" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 7", texto:"¿Qué magnitud determina cuántos ciclos completa una señal por segundo?", opciones:{ A:"El nivel de ruido",B:"La amplitud",C:"La impedancia del canal",D:"La frecuencia" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 7", texto:"¿Qué principio establece Shannon sobre la capacidad de un canal con ruido?", opciones:{ A:"La imposibilidad de alcanzar tasas superiores a 1 Mbps",B:"La obligación de usar codificación Manchester",C:"El límite máximo teórico de bits/s según ancho de banda y SNR",D:"La distorsión inevitable en señales digitales" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 7", texto:"¿Qué fenómeno reduce la potencia de una señal a medida que avanza por el medio?", opciones:{ A:"La modulación",B:"La distorsión de fase",C:"La atenuación",D:"La cuantificación" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 7", texto:"¿Cuál es la característica principal de FSK?", opciones:{ A:"No puede usarse en medios guiados",B:"Modifica solo la fase",C:"Modifica la frecuencia de la portadora",D:"Modifica únicamente la amplitud" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 7", texto:"¿Qué define la velocidad de propagación en un cable?", opciones:{ A:"El material y su constante dieléctrica",B:"La potencia de transmisión",C:"La frecuencia de muestreo",D:"La geometría del conector" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 7", texto:"¿Qué causa la distorsión de fase?", opciones:{ A:"Uso de coaxial",B:"Retrasos dependientes de frecuencia en el canal",C:"Ruido impulsivo",D:"Falta de modulación" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 7", texto:"¿Qué representa la amplitud en una señal analógica?", opciones:{ A:"La velocidad de muestreo de la señal",B:"El tipo de codificación empleado",C:"El valor máximo de variación de la señal respecto a su nivel de referencia",D:"El número de armónicos presentes" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 7", texto:"¿Qué estándar define el conector RJ-45?", opciones:{ A:"ISO 11801",B:"ANSI/TIA‑568",C:"IEEE 802.3af",D:"RFC 791" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 7", texto:"¿Qué caracteriza un medio no guiado?", opciones:{ A:"Evita atenuación",B:"No sufre interferencias",C:"Requiere guía física",D:"Transmite información por ondas electromagnéticas en el aire" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 7", texto:"¿Qué limitación tiene la luz infrarroja en comunicaciones?", opciones:{ A:"Produce diafonía",B:"Requiere visión directa sin obstáculos",C:"No transmite datos digitales",D:"No puede modularse" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 7", texto:"¿Qué relación existe entre tasa de bits y tasa de símbolos?", opciones:{ A:"La tasa de símbolos siempre es menor",B:"Depende de cuántos bits represente cada símbolo",C:"Siempre son iguales",D:"No existe relación" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 7", texto:"¿Qué limitación introduce la cuantificación?", opciones:{ A:"Desadaptación",B:"Ruido térmico",C:"Diafonía",D:"Error de redondeo o cuantización" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 7", texto:"¿Qué limita el ancho de banda de un canal físico?", opciones:{ A:"La dirección MAC utilizada",B:"Las propiedades del medio y el equipo de transmisión",C:"El protocolo de red",D:"El tamaño de las tramas" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 7", texto:"¿Qué limita la tasa de transferencia en cobre categoría 5e?", opciones:{ A:"La imposibilidad de usar full dúplex",B:"El tamaño de buffer",C:"La diafonía y la atenuación",D:"El tipo de aplicación" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 7", texto:"¿Qué es una portadora en modulación?", opciones:{ A:"Una trama de control",B:"Una señal base que se modifica para transportar información",C:"Un delimitador de inicio",D:"Ruido añadido al canal" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 7", texto:"¿Qué tipo de medio es típicamente inmune a interferencias electromagnéticas?", opciones:{ A:"La fibra óptica",B:"El par trenzado UTP",C:"Las ondas terrestres",D:"El cable coaxial" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 7", texto:"¿Qué define la multiplexación por división en el tiempo (TDM)?", opciones:{ A:"Permite solo señales analógicas",B:"Cada señal utiliza un par trenzado distinto",C:"Las señales comparten el canal alternando intervalos temporales",D:"Divide el espectro en subcanales fijos" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 7", texto:"¿Qué efecto produce un empalme defectuoso en fibra?", opciones:{ A:"Aumento de pérdidas y reflejos",B:"Incremento de velocidad",C:"Eliminación de dispersión",D:"Mejor relación señal‑ruido" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 7", texto:"¿Qué implica aumentar los niveles de cuantización?", opciones:{ A:"Peor SNR",B:"Mejor calidad pero mayor tasa de bits",C:"Menos niveles de ruido",D:"Menor consumo" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 7", texto:"¿Qué ventaja tiene el cable coaxial?", opciones:{ A:"Mayor inmunidad al ruido que UTP",B:"Permite mayores longitudes que fibra",C:"Mayor flexibilidad",D:"No requiere conectores" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 7", texto:"¿Qué determina la tasa de símbolos?", opciones:{ A:"El número de frecuencias disponibles",B:"Cuántos símbolos por segundo se transmiten",C:"El tipo de conector utilizado",D:"La potencia máxima admisible" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 7", texto:"¿Cuál es la función de un transceptor en el nivel físico?", opciones:{ A:"Convertir señales digitales a analógicas o viceversa",B:"Asignar direcciones MAC",C:"Gestionar retransmisiones",D:"Fragmentar tramas" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 7", texto:"¿Qué limitación fundamental impone el teorema de Nyquist en un canal sin ruido?", opciones:{ A:"Imposibilidad de usar multiplexación",B:"Dependencia exclusiva del nivel de potencia",C:"Necesidad de modulación analógica",D:"Máximo de 2B símbolos por segundo" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 7", texto:"¿Qué función tiene la modulación en comunicaciones?", opciones:{ A:"Reducir la impedancia del canal",B:"Adaptar la señal al medio variando una portadora",C:"Eliminar completamente el ruido",D:"Evitar el uso de amplificadores" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 7", texto:"¿Qué es un símbolo en comunicaciones digitales?", opciones:{ A:"Un pulso de reloj",B:"Una combinación de bits representada por un estado físico",C:"Un encabezado de trama",D:"Una frecuencia única sin información" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 7", texto:"¿Qué técnica reduce reflejos en cables de cobre?", opciones:{ A:"El filtrado paso banda",B:"La conversión serie‑paralelo",C:"La modulación digital",D:"La adaptación de impedancia" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 7", texto:"¿Qué propiedad describe la oposición del medio al paso de la corriente alterna?", opciones:{ A:"La diafonía",B:"La inductancia",C:"La atenuación",D:"La impedancia" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 7", texto:"¿Qué propiedad define PSK?", opciones:{ A:"La segmentación de tramas",B:"La variación de la fase de la portadora",C:"La cancelación de interferencias",D:"La adaptación de impedancia" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 7", texto:"¿Qué ventaja aporta OFDM?", opciones:{ A:"Evita totalmente la dispersión",B:"No necesita modulación",C:"Funciona solo en fibra",D:"Divide el canal en múltiples subportadoras ortogonales" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 7", texto:"¿Qué caracteriza a la multiplexación por división en frecuencia (FDM)?", opciones:{ A:"Cada señal ocupa una banda distinta dentro del espectro",B:"Usa exclusivamente señales digitales",C:"No necesita portadoras",D:"Cada señal ocupa tiempos alternos" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 7", texto:"¿Qué factor afecta más a ondas de microondas?", opciones:{ A:"La falta de modulación",B:"La diafonía",C:"La impedancia de conectores",D:"Obstáculos físicos y línea de vista" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 7", texto:"¿Qué mide la relación señal‑ruido (SNR)?", opciones:{ A:"La frecuencia mínima de operación",B:"La proporción entre potencia útil y potencia de ruido",C:"La impedancia del medio",D:"La calidad del aislamiento del cable" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 7", texto:"¿Qué define el número de niveles de cuantización?", opciones:{ A:"El conector empleado",B:"El tipo de modulación",C:"La resolución con la que se representa la señal",D:"La frecuencia de la portadora" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 7", texto:"¿Qué función cumple el filtrado en el transmisor?", opciones:{ A:"Eliminar necesidad de modulación",B:"Modificar la portadora",C:"Aumentar potencia",D:"Limitar el ancho de banda y reducir ISI" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 7", texto:"¿Qué causa la diafonía en cables de par trenzado?", opciones:{ A:"El uso de modulaciones digitales",B:"La falta de blindaje en conectores RJ-45",C:"La insuficiente frecuencia de muestreo",D:"El acoplamiento electromagnético entre pares adyacentes" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 7", texto:"¿Qué magnitud determina la potencia recibida?", opciones:{ A:"La velocidad de símbolo",B:"El tamaño del conector",C:"El tipo de protocolo",D:"La atenuación acumulada en el medio" }, correcta:"D", explicacion:"" },
+{ tema:"Tema 7", texto:"¿Qué efecto provoca la dispersión en fibra óptica?", opciones:{ A:"Eliminación del ruido térmico",B:"Ensanchamiento del pulso y solapamiento entre símbolos",C:"Atenuación cero",D:"Incremento de la velocidad lumínica" }, correcta:"B", explicacion:"" },
+{ tema:"Tema 7", texto:"¿Cuál es el propósito de la cuantificación tras el muestreo?", opciones:{ A:"Asignar cada muestra a un nivel discreto",B:"Convertir símbolos en bits",C:"Reducir ancho de banda",D:"Eliminar ruido" }, correcta:"A", explicacion:"" },
+{ tema:"Tema 7", texto:"¿Qué parámetro determina la velocidad de propagación en fibra?", opciones:{ A:"La potencia óptica",B:"El nivel de cuantificación",C:"El índice de refracción",D:"La inductancia" }, correcta:"C", explicacion:"" },
+{ tema:"Tema 7", texto:"¿Qué ventaja tiene QAM frente a ASK y PSK simples?", opciones:{ A:"Combina amplitud y fase para aumentar la eficiencia espectral",B:"Reduce totalmente la interferencia",C:"No requiere ancho de banda",D:"Elimina la necesidad de sincronización" }, correcta:"A", explicacion:"" },
+
+];
+
+
+let preguntas = [];
+let indice = 0;
+let aciertos = 0;
+let fallos = 0;
+let respondida = false;
+
+const preguntaEl = document.getElementById("pregunta");
+const opcionesEl = document.getElementById("opciones");
+const explicacionEl = document.getElementById("explicacion");
+
+const temaSelect = document.getElementById("temaSelect");
+const btnEmpezar = document.getElementById("empezar");
+const btnSiguiente = document.getElementById("siguiente");
+
+function cargarTemas() {
+  const temas = [...new Set(bancoPreguntas.map(p => p.tema))];
+  temaSelect.innerHTML = "";
+  temaSelect.append(new Option("Todos los temas", "TODOS"));
+  temas.forEach(t => temaSelect.append(new Option(t, t)));
+}
+
+function barajarArray(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+}
+
+function barajarOpciones(pregunta) {
+  // Convertimos las opciones en un array con info de corrección
+  let opciones = Object.entries(pregunta.opciones).map(([letra, texto]) => ({
+    texto,
+    esCorrecta: letra === pregunta.correcta
+  }));
+
+  // Barajamos
+  barajarArray(opciones);
+
+  // Reconstruimos A B C D
+  const letras = ["A", "B", "C", "D"];
+  pregunta.opciones = {};
+  opciones.forEach((op, i) => {
+    pregunta.opciones[letras[i]] = op.texto;
+    if (op.esCorrecta) {
+      pregunta.correcta = letras[i];
+    }
+  });
+}
+
+
+function iniciarTest() {
+  const tema = temaSelect.value;
+
+  preguntasPendientes = tema === "TODOS"
+    ? [...bancoPreguntas]
+    : bancoPreguntas.filter(p => p.tema === tema);
+
+  barajarArray(preguntasPendientes);
+  preguntasPendientes.forEach(p => barajarOpciones(p));
+
+  preguntas = preguntasPendientes;
+  preguntasPendientes = [];
+
+  indice = 0;
+  aciertos = 0;
+  fallos = 0;
+  ronda = 1;
+
+  mostrarPregunta();
+}
+
+
+function mostrarPregunta() {
+  respondida = false;
+  explicacionEl.textContent = "";
+  opcionesEl.innerHTML = "";
+
+  const p = preguntas[indice];
+  preguntaEl.textContent = `[${p.tema}] ${p.texto}`;
+
+  for (const letra in p.opciones) {
+    const btn = document.createElement("button");
+    btn.textContent = `${letra}) ${p.opciones[letra]}`;
+    btn.onclick = () => responder(letra, btn);
+    opcionesEl.appendChild(btn);
+  }
+
+  btnSiguiente.disabled = true;
+  actualizarStats();
+}
+
+function responder(letra, boton) {
+  if (respondida) return;
+  respondida = true;
+
+  const actual = preguntas[indice];
+  const correcta = actual.correcta;
+
+  [...opcionesEl.children].forEach(b => {
+    if (b.textContent.startsWith(correcta)) {
+      b.classList.add("correcta");
+    }
+  });
+
+  if (letra === correcta) {
+    aciertos++;
+  } else {
+    fallos++;
+    boton.classList.add("incorrecta");
+
+    // 🔁 Si fallas, vuelve a la cola
+    preguntasPendientes.push(JSON.parse(JSON.stringify(actual)));
+  }
+
+  explicacionEl.textContent = actual.explicacion || "";
+  btnSiguiente.disabled = false;
+  actualizarStats();
+}
+
+
+
+function actualizarStats() {
+  document.getElementById("aciertos").textContent = aciertos;
+  document.getElementById("fallos").textContent = fallos;
+  document.getElementById("contador").textContent =
+    `${indice + 1} / ${preguntas.length}`;
+  const total = aciertos + fallos;
+  document.getElementById("precision").textContent =
+    total ? Math.round((aciertos / total) * 100) + "%" : "—";
+}
+
+btnEmpezar.onclick = iniciarTest;
+
+btnSiguiente.onclick = () => {
+  indice++;
+
+  // Seguimos en la ronda actual
+  if (indice < preguntas.length) {
+    mostrarPregunta();
+    return;
+  }
+
+  // Fin de ronda → ¿quedan pendientes?
+  if (preguntasPendientes.length > 0) {
+    ronda++;
+
+    preguntas = preguntasPendientes;
+    preguntasPendientes = [];
+
+    barajarArray(preguntas);
+    preguntas.forEach(p => barajarOpciones(p));
+
+    indice = 0;
+    preguntaEl.textContent = `Ronda ${ronda} – preguntas pendientes`;
+    mostrarPregunta();
+    return;
+  }
+
+  // 🔚 Todas correctas
+  preguntaEl.textContent = "Test completado: todas las preguntas correctas.";
+  opcionesEl.innerHTML = "";
+  explicacionEl.textContent = "";
+  btnSiguiente.disabled = true;
+};
+
+
+cargarTemas();
+</script>
+
+</body>
+</html>
